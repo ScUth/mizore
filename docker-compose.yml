@@ -43,19 +43,19 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Next.js Frontend
-  frontend:
-    build:
-      context: ./nextjs
-      dockerfile: Dockerfile
-    container_name: mizore-frontend
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    restart: unless-stopped
+  # # Next.js Frontend
+  # frontend:
+  #   build:
+  #     context: ./nextjs
+  #     dockerfile: Dockerfile
+  #   container_name: mizore-frontend
+  #   environment:
+  #     NEXT_PUBLIC_API_URL: http://localhost:3000
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped
 
 volumes:
   postgres_data:
