@@ -10,6 +10,31 @@ const pool = new Pool({
     port: process.env.DB_PORT,
 });
 
-module.exports = {
-    query: (text, params) => pool.query(text, params),
-};
+pool.on('error', (err) => {
+    console.error('Unexpected error on idle client', err);
+    process.exit(-1);
+});
+
+export async function query(text, params) {
+    const start = Date.now()
+    const result = await pool.query(text, params)
+    const duration = Date.now() - start
+    console.log('executed query', { text, duration, rows: result.rowCount })
+    return result
+}
+
+export async function checkConnection() {
+    const client = await pool.connect()
+    try {
+        await client.query('SELECT 1')
+        return true
+    } finally {
+        client.release()
+    }
+}
+
+export async function closePool() {
+    await pool.end()
+}
+
+export default pool

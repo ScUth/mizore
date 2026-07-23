@@ -4,7 +4,6 @@ import {
   AppBar,
   Box,
   CssBaseline,
-  Divider,
   Drawer,
   IconButton,
   List,
@@ -13,27 +12,36 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
-  Typography,
+  Typography
 } from '@mui/material';
 import InboxIcon from '@mui/icons-material/MoveToInbox';
-import MailIcon from '@mui/icons-material/Mail';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
+import AddIcon from '@mui/icons-material/Add';
+import CustomDialog from './component/dialog';
 
 const drawerWidth = 240;
 
 // Single source of truth for AppBar height per breakpoint.
-// Everything else derives its offset from this instead of
-// carrying its own spacer element.
 const APPBAR_HEIGHT = { xs: 56, sm: 30 };
 
 const navItems = [
-  { text: 'Home', icon: <HomeIcon /> },
+  { text: 'Home', icon: <HomeIcon />, href: "/" },
   { text: 'Inbox', icon: <InboxIcon /> },
-  { text: 'Mail', icon: <MailIcon /> },
 ];
 
 export default function AppBarDrawer() {
+  const [openAddPathDialog, setOpenAddPathDialog] = React.useState(false);
+
+  const handleAddPathClickOpen = () => {
+    console.log('clicked');
+    setOpenAddPathDialog(true);
+  };
+
+  const handleAddPathClose = () => {
+    setOpenAddPathDialog(false);
+  };
+
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -52,14 +60,13 @@ export default function AppBarDrawer() {
           <Typography variant="subtitle1" noWrap component="div" sx={{ ml: 'auto' }}>
             Account
           </Typography>
-          <IconButton sx={{ ml: 1 }}>
+          <IconButton sx={{ ml: 1 }} href="/setting">
             <SettingsIcon sx={{ color: '#fff' }} />
           </IconButton>
         </Toolbar>
       </AppBar>
 
-      {/* Drawer: content itself is unaware of the AppBar.
-          The offset lives entirely on the Drawer's paper. */}
+      {/* Drawer */}
       <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
         <Drawer
           variant="permanent"
@@ -69,10 +76,8 @@ export default function AppBarDrawer() {
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
-              // start the panel below the AppBar...
               top: APPBAR_HEIGHT.sm + 10,
-              // ...and shrink its height so it doesn't run under it
-              height: `calc(100% - ${APPBAR_HEIGHT.sm}px)`,
+              height: `calc(100% - ${APPBAR_HEIGHT.sm + 10}px)`,
             },
           }}
           open
@@ -87,12 +92,24 @@ export default function AppBarDrawer() {
               </ListItem>
             ))}
           </List>
-          <Divider />
+          
+          <Typography sx={{ m: 2 }}>
+            Registered Path
+          </Typography>
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={handleAddPathClickOpen}>
+                <ListItemIcon>
+                  <AddIcon />
+                </ListItemIcon>
+                <ListItemText primary="Add Path" />
+              </ListItemButton>
+            </ListItem>
+          </List>
         </Drawer>
       </Box>
 
-      {/* Main content: also unaware of the AppBar; offset applied
-          once via padding-top rather than an internal spacer. */}
+      {/* Main content */}
       <Box
         component="main"
         sx={{
@@ -106,6 +123,13 @@ export default function AppBarDrawer() {
           This is your main content area. It no longer needs an empty
           Toolbar spacer — the offset is handled by the parent layout.
         </Typography>
+
+        <CustomDialog
+          open={openAddPathDialog}
+          onClose={handleAddPathClose}
+          title="Add Path"
+          content="Enter details for the new path."
+        />
       </Box>
     </Box>
   );

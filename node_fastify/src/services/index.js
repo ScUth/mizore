@@ -1,10 +1,10 @@
-// Logic
+// Logic (including database access) should be implemented here, not in the controller.
 import fs from 'fs/promises'
 import path from 'path'
 import config from '../config/storage.js'
 
-export async function listFiles() {
-    return fs.readdir(config.sharedFolder)
+export async function listFiles(file) {
+    return fs.readdir(path.join(config.sharedFolder, file))
 }
 
 export function getFilePath(filename) {

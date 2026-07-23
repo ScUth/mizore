@@ -6,5 +6,5 @@ export default async function routes(fastify, opts) {
     })
 
     fastify.get('/api/files/:filename', filesController.getFile)
-    fastify.get('/api/list', filesController.listFiles)
+    fastify.get('/api/list/:file', filesController.listFiles)
 }

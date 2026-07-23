@@ -7,8 +7,9 @@ export async function getFile(request, reply) {
 }
 
 export async function listFiles(request, reply) {
+    const { file } = request.params
     try {
-        const files = await fileService.listFiles()
+        const files = await fileService.listFiles(file)
         reply.send({ files })
     } catch (error) {
         request.log.error(error)
