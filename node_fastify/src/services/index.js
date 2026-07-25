@@ -12,3 +12,7 @@ export function getFilePath(filename) {
     const safeName = path.basename(filename)
     return path.join(config.sharedFolder, safeName)
 }
+
+export async function getAllUsers() {
+    return User.findAll();
+}
