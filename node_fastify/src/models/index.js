@@ -17,5 +17,10 @@ export const User = {
             [username, password, role]
         );
         return rows[0];
+    },
+
+    async findByUsername(username) {
+        const { rows } = await query('SELECT id, username, password, role, created_at FROM users WHERE username = $1', [username]);
+        return rows[0] || null;
     }
 }
