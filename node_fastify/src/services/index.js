@@ -2,9 +2,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import config from '../config/storage.js'
-import models from '../models/index.js'
-
-const { User } = models;
+import { User } from '../models/index.js'
 
 export async function listFiles(file) {
     return fs.readdir(path.join(config.sharedFolder, file))

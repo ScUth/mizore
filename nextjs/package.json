@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@embedpdf/react-pdf-viewer": "^2.14.4",
+    "@emnapi/runtime": "^1.10.0",
     "@emotion/cache": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.2.0",
