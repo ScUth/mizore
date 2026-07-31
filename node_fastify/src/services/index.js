@@ -30,3 +30,11 @@ export async function getUserByUsername(username) {
 export async function createUser(user) {
     return User.create(user.username, user.password, user.role);
 }
+
+export async function deleteUserById(id) {
+    return User.deleteById(id);
+}
+
+export async function updateUserById(id, user) {
+    return User.updateById(id, user.username, user.password, user.role);
+}

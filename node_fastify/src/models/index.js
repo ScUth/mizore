@@ -22,5 +22,18 @@ export const User = {
     async findByUsername(username) {
         const { rows } = await query('SELECT id, username, password, role, created_at FROM users WHERE username = $1', [username]);
         return rows[0] || null;
+    },
+
+    async deleteById(id) {
+        const { rows } = await query('DELETE FROM users WHERE id = $1 RETURNING id, username, role, created_at', [id]);
+        return rows[0] || null;
+    },
+
+    async updateById(id, username, password, role) {
+        const { rows } = await query(
+            'UPDATE users SET username = $1, password = $2, role = $3 WHERE id = $4 RETURNING id, username, role, created_at',
+            [username, password, role, id]
+        );
+        return rows[0] || null;
     }
 }

@@ -10,4 +10,6 @@ export default async function routes(fastify, opts) {
     fastify.get('/api/users', controllers.getAllUsers);
     fastify.post('/api/users/createdUser', controllers.createUser);
     fastify.post('/api/login', controllers.loginUser);
+    fastify.delete('/api/users/:id', controllers.deleteUser);
+    fastify.put('/api/users/:id', controllers.updateUser);
 }

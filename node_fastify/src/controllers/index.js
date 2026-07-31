@@ -67,3 +67,48 @@ export async function loginUser(request, reply) {
         return reply.status(500).send({ error: 'Failed to login user' })
     }
 }
+
+export async function deleteUser(request, reply) {
+    const { id } = request.params ?? {}
+
+    if (!id) {
+        return reply.status(400).send({ error: 'User ID is required' })
+    }
+
+    try {
+        const deletedUser = await services.deleteUserById(id)
+        if (!deletedUser) {
+            return reply.status(404).send({ error: 'User not found' })
+        }
+        return reply.send({ message: 'User deleted successfully', user: deletedUser })
+    } catch (error) {
+        request.log.error(error)
+        return reply.status(500).send({ error: 'Failed to delete user' })
+    }
+}
+
+export async function updateUser(request, reply) {
+    const { id } = request.params ?? {}
+    const user = { username: request.body.username, password: request.body.password, role: request.body.role }
+
+    if (!id) {
+        return reply.status(400).send({ error: 'User ID is required' })
+    }
+
+    try {
+        if (user.password) {
+            const salt = await bcrypt.genSalt(10)
+            const hashedPassword = await bcrypt.hash(user.password, salt)
+            user.password = hashedPassword
+        }
+
+        const updatedUser = await services.updateUserById(id, user)
+        if (!updatedUser) {
+            return reply.status(404).send({ error: 'User not found' })
+        }
+        return reply.send({ message: 'User updated successfully', user: updatedUser })
+    } catch (error) {
+        request.log.error(error)
+        return reply.status(500).send({ error: 'Failed to update user' })
+    }
+}
