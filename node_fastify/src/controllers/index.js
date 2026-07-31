@@ -29,7 +29,7 @@ export async function getAllUsers(request, reply) {
 }
 
 export async function createUser(request, reply) {
-    const user = {username: request.params.username, password: request.params.password, role: request.params.role};
+    const user = { username: request.body.username, password: request.body.password, role: request.body.role };
     try {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(user.password, salt);
@@ -39,24 +39,31 @@ export async function createUser(request, reply) {
     } catch (error) {
         request.log.error(error);
         reply.status(500).send({ error: 'Failed to create user' });
-}
+    }
 }
 
 export async function loginUser(request, reply) {
-    const { username, password } = request.body;
+    const { username, password } = request.body ?? {}
+
+    if (!username || !password) {
+        return reply.status(400).send({ error: 'Username and password are required' })
+    }
+
     try {
-        const user = await services.getUserByUsername(username);
+        const user = await services.getUserByUsername(username)
         if (!user) {
-            return reply.status(401).send({ error: 'Invalid username or password' });
+            return reply.status(401).send({ error: 'Invalid username or password' })
         }
-        const isMatch = await bcrypt.compare(password, user.password);
+
+        const isMatch = await bcrypt.compare(password, user.password)
         if (!isMatch) {
-            return reply.status(401).send({ error: 'Invalid username or password' });
+            return reply.status(401).send({ error: 'Invalid username or password' })
         }
-        // Here you would typically generate a JWT token and send it back to the client
-        reply.send({ message: 'Login successful', user });
+
+        const { password: _password, ...safeUser } = user
+        return reply.send({ message: 'Login successful', user: safeUser })
     } catch (error) {
-        request.log.error(error);
-        reply.status(500).send({ error: 'Failed to login user' });
+        request.log.error(error)
+        return reply.status(500).send({ error: 'Failed to login user' })
     }
 }

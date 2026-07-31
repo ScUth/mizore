@@ -23,9 +23,11 @@ export const APPBAR_HEIGHT = { xs: 56, sm: 30 };
 const navItems = [{ text: "Home", icon: <HomeIcon />, href: "/" }];
 
 export default function Sidebar({
-  onAddPathClickOpen, index
+  onAddPathClickOpen,
+  index,
 }: {
   onAddPathClickOpen: () => void;
+  index: string;
 }) {
   return (
     <>
