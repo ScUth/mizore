@@ -37,3 +37,23 @@ export const User = {
         return rows[0] || null;
     }
 }
+
+export const Path = {
+    async findAll() {
+        const { rows } = await query('SELECT id, name, path, user_id FROM paths ORDER BY id');
+        return rows;
+    },
+
+    async findById(id) {
+        const { rows } = await query("select id, name, path, user_id from paths where id = $1", [id]);
+        return rows[0] || null;
+    },
+
+    async create(name, path, user_id) {
+        const { rows } = await query(
+            "insert into paths (name, path, user_id) values ($1, $2, $3) returning id, name, path, user_id",
+            [name, path, user_id]
+        );
+        return rows[0];
+    }
+}

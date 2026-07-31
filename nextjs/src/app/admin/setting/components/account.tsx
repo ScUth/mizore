@@ -258,6 +258,12 @@ export default function Account({ width = "100%" }: AccountProps) {
       return;
     }
 
+    // Prevent duplicate usernames (case-insensitive) on the client-side
+    if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
+      setCreateError("Username already exists.");
+      return;
+    }
+
     setCreating(true);
     setCreateError("");
 

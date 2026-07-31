@@ -23,7 +23,6 @@ export async function getUserById(id) {
 }
 
 export async function getUserByUsername(username) {
-    // Assuming the User model has a method to find a user by username
     return User.findByUsername(username);
 }
 

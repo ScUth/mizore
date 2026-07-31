@@ -18,6 +18,21 @@ export async function listFiles(request, reply) {
     }
 }
 
+export async function getUserByUsername(request, reply) {
+    const { username } = request.params
+    try {
+        const user = await services.getUserByUsername(username)
+        if (!user) {
+            return reply.status(404).send({ error: 'User not found' })
+        }
+        const { password: _password, ...safeUser } = user
+        return reply.send({ user: safeUser })
+    } catch (error) {
+        request.log.error(error)
+        return reply.status(500).send({ error: 'Failed to retrieve user' })
+    }
+}
+
 export async function getAllUsers(request, reply) {
     try {
         const users = await services.getAllUsers();
