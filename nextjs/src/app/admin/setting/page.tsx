@@ -1,6 +1,7 @@
 "use client";
 import { Box, CssBaseline } from "@mui/material";
 import * as React from "react";
+import AdminGuard from "../components/adminGuard";
 import Sidebar from "../../component/sidebar";
 import SettingBar from "../components/settingBar";
 import Account from "./components/account";
@@ -23,6 +24,7 @@ export default function Setting() {
   };
 
   return (
+    <AdminGuard>
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
       <Sidebar onAddPathClickOpen={handleAddPathClickOpen} index="Setting" />
@@ -64,5 +66,6 @@ export default function Setting() {
         </Box>
       </Box>
     </Box>
+    </AdminGuard>
   );
 }

@@ -50,8 +50,24 @@ type SortDirection = "asc" | "desc";
 
 // Prefer an env var so this isn't hardcoded to one machine's LAN IP.
 // Add NEXT_PUBLIC_API_URL=http://192.168.1.57:4000 to your .env.local as a fallback during dev.
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+function getStoredToken() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return window.localStorage.getItem("accessToken") ?? "";
+}
+
+function getAuthHeaders(extraHeaders: Record<string, string> = {}) {
+  const token = getStoredToken();
+  return {
+    Accept: "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extraHeaders,
+  };
+}
 
 const ROLE_OPTIONS = ["admin", "user"];
 const CREATE_ROLE_OPTIONS = ["admin", "user"];
@@ -133,7 +149,7 @@ export default function Account({ width = "100%" }: AccountProps) {
     try {
       const response = await fetch(`${API_BASE}/api/users`, {
         cache: "no-store",
-        headers: { Accept: "application/json" },
+        headers: getAuthHeaders(),
         signal,
       });
 
@@ -258,13 +274,19 @@ export default function Account({ width = "100%" }: AccountProps) {
       return;
     }
 
+    // Prevent duplicate usernames (case-insensitive) on the client-side
+    if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
+      setCreateError("Username already exists.");
+      return;
+    }
+
     setCreating(true);
     setCreateError("");
 
     try {
       const response = await fetch(`${API_BASE}/api/users/createdUser`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ username, password, role: createRole }),
       });
 
@@ -312,7 +334,7 @@ export default function Account({ width = "100%" }: AccountProps) {
     try {
       const response = await fetch(`${API_BASE}/api/users/${editingUser.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ username: editUsername, role: editRole }),
       });
 
@@ -358,6 +380,7 @@ export default function Account({ width = "100%" }: AccountProps) {
     try {
       const response = await fetch(`${API_BASE}/api/users/${deletingUser.id}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {

@@ -1,5 +1,6 @@
 import * as services from '../services/index.js'
 import bcrypt from 'bcrypt'
+import { generateAccessToken, generateRefreshToken, verifyAccessToken } from '../utils/jwt.js'
 
 export async function getFile(request, reply) {
     const { filename } = request.params
@@ -16,6 +17,64 @@ export async function listFiles(request, reply) {
         request.log.error(error)
         reply.status(500).send({ error: 'Failed to list files' })
     }
+}
+
+export async function getUserByUsername(request, reply) {
+    const { username } = request.params
+    try {
+        const user = await services.getUserByUsername(username)
+        if (!user) {
+            return reply.status(404).send({ error: 'User not found' })
+        }
+        const { password: _password, ...safeUser } = user
+        return reply.send({ user: safeUser })
+    } catch (error) {
+        request.log.error(error)
+        return reply.status(500).send({ error: 'Failed to retrieve user' })
+    }
+}
+
+export async function authenticate(request, reply) {
+    const authHeader = request.headers.authorization
+
+    if (!authHeader?.startsWith('Bearer ')) {
+        reply.status(401).send({ error: 'Authentication token is required' })
+        return false
+    }
+
+    try {
+        request.user = verifyAccessToken(authHeader.slice(7))
+        return true
+    } catch (error) {
+        request.log.error(error)
+        reply.status(401).send({ error: 'Invalid or expired token' })
+        return false
+    }
+}
+
+export async function requireAdmin(request, reply) {
+    const isAuthenticated = await authenticate(request, reply)
+    if (!isAuthenticated) {
+        return false
+    }
+
+    if (request.user?.role !== 'admin') {
+        reply.status(403).send({ error: 'Admin access required' })
+        return false
+    }
+
+    return true
+}
+
+export async function getCurrentUser(request, reply) {
+    return reply.send({
+        user: {
+            id: request.user?.id,
+            username: request.user?.username,
+            role: request.user?.role,
+        },
+        message: 'Token is valid',
+    })
 }
 
 export async function getAllUsers(request, reply) {
@@ -61,7 +120,10 @@ export async function loginUser(request, reply) {
         }
 
         const { password: _password, ...safeUser } = user
-        return reply.send({ message: 'Login successful', user: safeUser })
+        const accessToken = generateAccessToken({ id: user.id, username: user.username, role: user.role })
+        const refreshToken = generateRefreshToken({ id: user.id, username: user.username, role: user.role })
+
+        return reply.send({ message: 'Login successful', user: safeUser, accessToken, refreshToken })
     } catch (error) {
         request.log.error(error)
         return reply.status(500).send({ error: 'Failed to login user' })
