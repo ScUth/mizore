@@ -1,19 +1,21 @@
 # Mizore Project (indev)
-## Installation (Backend)
-1. Go to the backend folder
-```bash
-cd node_fastify
-```
-2. Create `.env` from `.env.exmaple`
-3. Run this command to install all the packages
-```bash
-npm i
-``` 
+## ~~Installation (Backend)~~
+~~1. Go to the backend folder~~
+~~```bash~~
+~~cd node_fastify~~
+~~```~~
 
-4. Run to start the server
-```bash
-node .
-```
+~~2. Create `.env` from `.env.exmaple`~~
+
+~~3. Run this command to install all the packages~~
+~~```bash~~
+~~npm i~~
+~~``` ~~
+
+~~4. Run to start the server~~
+~~```bash~~
+~~node .~~
+~~```~~
 ## Installation (Frontend)
 2. Go to the frontend folder
 ```bash

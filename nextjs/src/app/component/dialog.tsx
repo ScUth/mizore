@@ -35,7 +35,12 @@ export default function CustomDialog({
       maxWidth="sm"
       slotProps={
         onSubmit
-          ? { paper: { component: 'form', onSubmit } }
+          ? {
+              paper: {
+                component: "form",
+                onSubmit: (event: React.FormEvent<HTMLFormElement>) => onSubmit(event),
+              } as React.ComponentProps<typeof Dialog>["slotProps"],
+            }
           : undefined
       }
     >
