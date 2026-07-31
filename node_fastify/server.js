@@ -4,7 +4,7 @@ import cors from '@fastify/cors'
 
 const fastify = await buildApp()
 
-fastify.register(cors({origin: '*'}));
+fastify.register(cors, {origin: '*'});
 
 fastify.listen({ port: process.env.PORT || 4000, host: process.env.HOST || '0.0.0.0' }, (err) => {
     if (err) {
