@@ -1,6 +1,6 @@
 // ESM
 import buildApp from './src/app.js'
-import cors from 'cors'
+import cors from '@fastify/cors'
 
 const fastify = await buildApp()
 
