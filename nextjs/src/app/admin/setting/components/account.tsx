@@ -262,7 +262,7 @@ export default function Account({ width = "100%" }: AccountProps) {
     setCreateError("");
 
     try {
-      const response = await fetch(`${API_BASE}/api/users/createUser`, {
+      const response = await fetch(`${API_BASE}/api/users/createdUser`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, role: createRole }),
@@ -608,7 +608,7 @@ export default function Account({ width = "100%" }: AccountProps) {
 
       {/* Create dialog */}
       <Dialog open={createDialogOpen} onClose={closeCreateDialog} fullWidth maxWidth="xs" slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
-        <DialogTitle sx={{ fontWeight: 600 }}>Add teammate</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600 }}>Add account</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "8px !important" }}>
           {createError && <Alert severity="error">{createError}</Alert>}
           <TextField
@@ -653,7 +653,7 @@ export default function Account({ width = "100%" }: AccountProps) {
             disabled={creating}
             sx={{ bgcolor: tokens.accent, textTransform: "none", "&:hover": { bgcolor: "#4338CA" } }}
           >
-            {creating ? "Adding…" : "Add teammate"}
+            {creating ? "Adding…" : "Add account"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -706,7 +706,7 @@ export default function Account({ width = "100%" }: AccountProps) {
 
       {/* Delete confirmation */}
       <Dialog open={Boolean(deletingUser)} onClose={closeDelete} fullWidth maxWidth="xs" slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
-        <DialogTitle sx={{ fontWeight: 600 }}>Remove teammate</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600 }}>Remove account</DialogTitle>
         <DialogContent sx={{ pt: "8px !important" }}>
           {deleteError && <Alert severity="error" sx={{ mb: 2 }}>{deleteError}</Alert>}
           <Typography sx={{ color: tokens.textPrimary }}>
