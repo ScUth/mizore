@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import {
   AppBar,
@@ -19,6 +21,7 @@ import Link from "next/link";
 
 const drawerWidth = 240;
 export const APPBAR_HEIGHT = { xs: 56, sm: 30 };
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
 
 const navItems = [{ text: "Home", icon: <HomeIcon />, href: "/" }];
 
@@ -29,6 +32,39 @@ export default function Sidebar({
   onAddPathClickOpen: () => void;
   index: string;
 }) {
+  const [me, setMe] = React.useState("");
+
+  React.useEffect(() => {
+    const loadMe = async () => {
+      const token = window.localStorage.getItem("accessToken");
+      if (!token) {
+        setMe("Guest");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          setMe("Guest");
+          return;
+        }
+
+        const data = await response.json();
+        setMe(data?.user?.username || data?.username || "Guest");
+      } catch (error) {
+        console.error("Failed to load /api/me", error);
+        setMe("Guest");
+      }
+    };
+
+    void loadMe();
+  }, []);
+
   return (
     <>
       <AppBar
@@ -45,9 +81,9 @@ export default function Sidebar({
             component="div"
             sx={{ ml: "auto" }}
           >
-            Account
+            {me || "Account"}
           </Typography>
-          {/* FIX LATER */}
+          {/* Account name from /api/me */}
           <IconButton sx={{ ml: 1 }} href="/admin/setting"> 
             <SettingsIcon sx={{ color: "#fff" }} />
           </IconButton>

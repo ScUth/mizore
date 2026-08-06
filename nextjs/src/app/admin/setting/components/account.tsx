@@ -50,7 +50,7 @@ type SortDirection = "asc" | "desc";
 
 // Prefer an env var so this isn't hardcoded to one machine's LAN IP.
 // Add NEXT_PUBLIC_API_URL=http://192.168.1.57:4000 to your .env.local as a fallback during dev.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
 
 function getStoredToken() {
   if (typeof window === "undefined") {

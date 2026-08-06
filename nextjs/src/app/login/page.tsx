@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
 
 function decodeTokenPayload(token: string | null) {
   if (!token) return null;
@@ -148,9 +148,9 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {/* <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               Token preview: {tokenPreview}
-            </Typography>
+            </Typography> */}
 
             <Grid container sx={{ justifyContent: "flex-end" }}>
               <Grid>
