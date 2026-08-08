@@ -10,7 +10,7 @@ export default async function routes(fastify, opts) {
     fastify.post('/api/login', controllers.loginUser)
     fastify.get('/api/me', { preHandler: [controllers.authenticate] }, controllers.getCurrentUser)
     fastify.get('/api/users', { preHandler: [controllers.requireAdmin] }, controllers.getAllUsers)
-    fastify.post('/api/users/createdUser', { preHandler: [controllers.requireAdmin] }, controllers.createUser)
+    fastify.post('/api/users/createdUser', controllers.createUser)
     fastify.delete('/api/users/:id', { preHandler: [controllers.requireAdmin] }, controllers.deleteUser)
     fastify.patch('/api/users/:id', { preHandler: [controllers.requireAdmin] }, controllers.updateUser)
     fastify.put('/api/users/:id', { preHandler: [controllers.requireAdmin] }, controllers.updateUser)
