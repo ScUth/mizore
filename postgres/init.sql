@@ -3,7 +3,7 @@ create table if not exists users (
     username varchar(255) not null,
     password varchar(60) not null,
     role varchar(255) not null,
-    create_at timestamptz not null default now()
+    created_at timestamptz not null default now()
 );
 
 create table if not exists path (
@@ -16,5 +16,7 @@ create table if not exists path (
 create table if not exists subUsers (
     id serial PRIMARY KEY,
     name varchar(255) not null,
-    user_id serial REFERENCES users(id)
+    user_id serial REFERENCES users(id),
+    role VARCHAR(255) not null,
+    created_at TIMESTAMP not null DEFAULT now()
 );

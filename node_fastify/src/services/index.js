@@ -37,3 +37,7 @@ export async function deleteUserById(id) {
 export async function updateUserById(id, user) {
     return User.updateById(id, user.username, user.password, user.role);
 }
+
+export async function createSubUser(subUser) {
+    return User.create(subUser.username, subUser.password, subUser.role, subUser.parentUserId);
+}

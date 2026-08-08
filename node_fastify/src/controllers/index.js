@@ -174,3 +174,17 @@ export async function updateUser(request, reply) {
         return reply.status(500).send({ error: 'Failed to update user' })
     }
 }
+
+export async function createdSubUser(request, reply) {
+    const subUser = { username: request.body.username, password: request.body.password, role: request.body.role, parentUserId: request.body.parentUserId };
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(subUser.password, salt);
+        subUser.password = hashedPassword;
+        const newSubUser = await services.createSubUser(subUser);
+        reply.status(201).send({ subUser: newSubUser });
+    } catch (error) {
+        request.log.error(error);
+        reply.status(500).send({ error: 'Failed to create sub-user' });
+    }
+}

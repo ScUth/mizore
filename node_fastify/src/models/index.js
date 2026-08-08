@@ -38,6 +38,26 @@ export const User = {
     }
 }
 
+export const subUser = {
+    async findAll() {
+        const { rows } = await query('SELECT id, username, role, created_at FROM subUsers ORDER BY id');
+        return rows;
+    },
+
+    async findById(id) {
+        const { rows } = await query("SELECT id, username, role, created_at from subUsers where id = $1", [id]);
+        return rows[0] || null;
+    },
+
+    async create(username, password, role, parentUserId) {
+        const { rows } = await query(
+            'INSERT INTO subUsers (username, password, role, user_id) VALUES ($1, $2, $3, $4) RETURNING id, username, role, created_at',
+            [username, password, role, parentUserId]
+        );
+        return rows[0];
+    }
+};
+
 export const Path = {
     async findAll() {
         const { rows } = await query('SELECT id, name, path, user_id FROM paths ORDER BY id');

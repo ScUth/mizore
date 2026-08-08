@@ -1,7 +1,6 @@
 "use client";
 
 import AddIcon from "@mui/icons-material/Add";
-// import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutline";
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import SearchIcon from "@mui/icons-material/Search";
@@ -57,6 +56,21 @@ function getStoredToken() {
   }
 
   return window.localStorage.getItem("accessToken") ?? "";
+}
+
+function decodeTokenPayload(token: string | null) {
+  if (!token) return null;
+
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = window.atob(normalized);
+    return JSON.parse(decoded) as { id?: number; username?: string; role?: string };
+  } catch {
+    return null;
+  }
 }
 
 function getAuthHeaders(extraHeaders: Record<string, string> = {}) {
@@ -267,9 +281,15 @@ export default function Account({ width = "100%" }: AccountProps) {
   const handleCreate = async () => {
     const username = createUsername.trim();
     const password = createPassword.trim();
+    const parentUserId = decodeTokenPayload(getStoredToken())?.id;
 
     if (!username || !password) {
       setCreateError("Username and password are required.");
+      return;
+    }
+
+    if (parentUserId == null) {
+      setCreateError("Unable to determine the current logged in user.");
       return;
     }
 
@@ -283,10 +303,10 @@ export default function Account({ width = "100%" }: AccountProps) {
     setCreateError("");
 
     try {
-      const response = await fetch(`${API_BASE}/api/users/createdUser`, {
+      const response = await fetch(`${API_BASE}/api/users/createdSubUser`, {
         method: "POST",
         headers: getAuthHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ username, password, role: createRole }),
+        body: JSON.stringify({ username, password, role: createRole, parentUserId }),
       });
 
       if (!response.ok) {
