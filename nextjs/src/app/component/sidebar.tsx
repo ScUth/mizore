@@ -35,7 +35,8 @@ export default function Sidebar({
   index: string;
 }) {
   const router = useRouter();
-  const [account, setAccount] = React.useState({ name: "Account", role: "user" });
+  const [account, setAccount] = React.useState<{ name: string; role: string; id?: string }>({ name: "Account", role: "user" });
+  const [paths, setPaths] = React.useState<any[]>([]);
   const [accountMenuAnchor, setAccountMenuAnchor] = React.useState<null | HTMLElement>(null);
 
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -78,10 +79,33 @@ export default function Sidebar({
         }
 
         const data = await response.json();
+        const userId = data?.user?.id || data?.id || undefined;
+
         setAccount({
           name: data?.user?.username || data?.username || "Guest",
           role: data?.user?.role || data?.role || "user",
+          id: userId,
         });
+
+        // Fetch user's paths if we have an id
+        if (userId) {
+          try {
+            const pResp = await fetch(`${API_BASE}/api/paths/${userId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (pResp.ok) {
+              const pData = await pResp.json();
+              // accept either { paths: [...] } or an array result
+              setPaths(pData?.paths || (Array.isArray(pData) ? pData : []));
+            } else {
+              setPaths([]);
+            }
+          } catch (err) {
+            console.error('Failed to load /api/paths/:id', err);
+            setPaths([]);
+          }
+        }
       } catch (error) {
         console.error("Failed to load /api/me", error);
         setAccount({ name: "Guest", role: "user" });
@@ -197,6 +221,17 @@ export default function Sidebar({
                 <ListItemText primary="Add Path" />
               </ListItemButton>
             </ListItem>
+            {paths.map((p, i) => (
+              <ListItem key={p.id || p._id || i} disablePadding>
+                <ListItemButton
+                  onClick={() =>
+                    router.push(`/admin/paths/${p.id || p._id || encodeURIComponent(p.name || p.path || String(i))}`)
+                  }
+                >
+                  <ListItemText primary={p.name || p.path || p.label || p._id || p.id || `Path ${i + 1}`} />
+                </ListItemButton>
+              </ListItem>
+            ))}
           </List>
         </Drawer>
       </Box>

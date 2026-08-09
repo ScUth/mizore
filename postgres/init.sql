@@ -6,7 +6,7 @@ create table if not exists users (
     created_at timestamptz not null default now()
 );
 
-create table if not exists path (
+create table if not exists paths (
     id serial primary key,
     name varchar(255) not null,
     path text not null,

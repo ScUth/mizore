@@ -81,7 +81,7 @@ export const Path = {
 
     async create(name, path, user_id) {
         const { rows } = await query(
-            "insert into path (name, path, user_id) values ($1, $2, $3) returning id, name, path, user_id",
+            "insert into paths (name, path, user_id) values ($1, $2, $3) returning id, name, path, user_id",
             [name, path, user_id]
         );
         return rows[0];

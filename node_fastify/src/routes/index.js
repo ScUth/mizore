@@ -23,6 +23,7 @@ export default async function routes(fastify, opts) {
     // Path
     fastify.get('/api/files/:filename', controllers.getFile)
     fastify.get('/api/list/:file', controllers.listFiles)
-    
+    fastify.get('/api/paths/:userId', { preHandler: [controllers.authenticate] }, controllers.getAllPathsByUserId)
+
     fastify.post('/api/paths', { preHandler: [controllers.authenticate] }, controllers.createPath)
 }

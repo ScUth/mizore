@@ -226,3 +226,19 @@ export async function createdSubUser(request, reply) {
         reply.status(500).send({ error: 'Failed to create sub-user' });
     }
 }
+
+export async function getAllPathsByUserId(request, reply) {
+    const { userId } = request.params;
+
+    if (!userId) {
+        return reply.status(400).send({ error: 'User ID is required' });
+    }
+
+    try {
+        const paths = await services.getAllPathsByUserId(userId);
+        reply.send({ paths });
+    } catch (error) {
+        request.log.error(error);
+        reply.status(500).send({ error: 'Failed to retrieve paths' });
+    }
+}
