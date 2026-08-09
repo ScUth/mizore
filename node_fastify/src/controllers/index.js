@@ -20,9 +20,19 @@ export async function listFiles(request, reply) {
 }
 
 export async function createPath(request, reply) {
-    const { path } = { name: request.body.name, path: request.body.path, user_id: request.body.user_id }
+    const { name, path, user_id } = request.body ?? {}
+    const pathData = {
+        name,
+        path,
+        user_id: user_id ?? request.user?.id,
+    }
+
+    if (!pathData.name || !pathData.path || !pathData.user_id) {
+        return reply.status(400).send({ error: 'Name, path, and user_id are required' })
+    }
+
     try {
-        const newPath = await services.createPath(path)
+        const newPath = await services.createPath(pathData)
         reply.status(201).send({ path: newPath })
     } catch (error) {
         request.log.error(error)

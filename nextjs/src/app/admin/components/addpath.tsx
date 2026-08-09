@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Button, TextField } from "@mui/material";
 import CustomDialog from "../../component/dialog";
+import AdminGuard from "./adminGuard";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
 
@@ -16,13 +17,12 @@ function getStoredToken() {
 
 function decodeTokenPayload(token: string | null) {
   if (!token) return null;
-
   try {
     const payload = token.split(".")[1];
     if (!payload) return null;
-
     const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = window.atob(normalized);
+    const pad = "=".repeat((4 - (normalized.length % 4)) % 4);
+    const decoded = window.atob(normalized + pad);
     return JSON.parse(decoded) as { id?: number };
   } catch {
     return null;
@@ -55,19 +55,24 @@ export default function AddPathDialog({
     onClose();
   };
 
+  const token = getStoredToken();
+  const userId = decodeTokenPayload(token)?.id ?? null;
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const trimmedPath = path.trim();
     const trimmedName = pathName.trim();
-    const userId = decodeTokenPayload(getStoredToken())?.id;
 
-    if (!trimmedPath || !trimmedName) return;
+    if (!trimmedPath || !trimmedName || userId == null || !token) return; // require auth
 
     try {
       const response = await fetch(`${API_BASE}/api/paths`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           path: trimmedPath,
           name: trimmedName,
@@ -86,39 +91,39 @@ export default function AddPathDialog({
   };
 
   return (
-    <CustomDialog
-      open={open}
-      onClose={handleClose}
-      title="Add Path"
-      content="Enter details for the new path."
-      onSubmit={handleSubmit}
-      actions={
-        <>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button type="submit" variant="contained">
-            Save
-          </Button>
-        </>
-      }
-    >
-      <TextField
-        autoFocus
-        fullWidth
-        label="Path"
-        placeholder="e.g. /api/users or C:\\Projects\\MyPath"
-        value={path}
-        onChange={(event) => setPath(event.target.value)}
-        margin="normal"
-        required
-      />
-      <TextField
-        fullWidth
-        label="Path Name"
-        value={pathName}
-        onChange={(event) => setPathName(event.target.value)}
-        margin="normal"
-        required
-      />
-    </CustomDialog>
+      <CustomDialog
+        open={open}
+        onClose={handleClose}
+        title={`Add Path`}
+        content="Enter details for the new path."
+        onSubmit={handleSubmit}
+        actions={
+          <>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button type="submit" variant="contained">
+              Save
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          autoFocus
+          fullWidth
+          label="Path"
+          placeholder="e.g. /api/users or C:\\Projects\\MyPath"
+          value={path}
+          onChange={(event) => setPath(event.target.value)}
+          margin="normal"
+          required
+        />
+        <TextField
+          fullWidth
+          label="Path Name"
+          value={pathName}
+          onChange={(event) => setPathName(event.target.value)}
+          margin="normal"
+          required
+        />
+      </CustomDialog>
   );
 }
