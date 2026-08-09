@@ -2,7 +2,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import config from '../config/storage.js'
-import { User } from '../models/index.js'
+import { User, subUser } from '../models/index.js'
 
 export async function listFiles(file) {
     return fs.readdir(path.join(config.sharedFolder, file))
@@ -26,6 +26,14 @@ export async function getUserByUsername(username) {
     return User.findByUsername(username);
 }
 
+export async function existsUsername(username) {
+    const [userExists, subUserExists] = await Promise.all([
+        User.existsByUsername(username),
+        subUser.existsByUsername(username),
+    ]);
+    return userExists || subUserExists;
+}
+
 export async function createUser(user) {
     return User.create(user.username, user.password, user.role);
 }
@@ -38,6 +46,6 @@ export async function updateUserById(id, user) {
     return User.updateById(id, user.username, user.password, user.role);
 }
 
-export async function createSubUser(subUser) {
-    return User.create(subUser.username, subUser.password, subUser.role, subUser.parentUserId);
+export async function createSubUser(subUserData) {
+    return subUser.create(subUserData.username, subUserData.password, subUserData.role, subUserData.parentUserId);
 }

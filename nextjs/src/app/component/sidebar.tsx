@@ -5,19 +5,21 @@ import {
   AppBar,
   Box,
   Drawer,
-  IconButton,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Menu,
+  MenuItem,
   Toolbar,
   Typography,
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import SettingsIcon from "@mui/icons-material/Settings";
+import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const drawerWidth = 240;
 export const APPBAR_HEIGHT = { xs: 56, sm: 30 };
@@ -32,13 +34,34 @@ export default function Sidebar({
   onAddPathClickOpen: () => void;
   index: string;
 }) {
-  const [me, setMe] = React.useState("");
+  const router = useRouter();
+  const [account, setAccount] = React.useState({ name: "Account", role: "user" });
+  const [accountMenuAnchor, setAccountMenuAnchor] = React.useState<null | HTMLElement>(null);
+
+  const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAccountMenuAnchor(event.currentTarget);
+  };
+
+  const handleAccountMenuClose = () => {
+    setAccountMenuAnchor(null);
+  };
+
+  const handleSettingsClick = () => {
+    handleAccountMenuClose();
+    router.push("/admin/setting");
+  };
+
+  const handleLogoutClick = () => {
+    handleAccountMenuClose();
+    window.localStorage.removeItem("accessToken");
+    router.push("/login");
+  };
 
   React.useEffect(() => {
     const loadMe = async () => {
       const token = window.localStorage.getItem("accessToken");
       if (!token) {
-        setMe("Guest");
+        setAccount({ name: "Guest", role: "user" });
         return;
       }
 
@@ -50,20 +73,27 @@ export default function Sidebar({
         });
 
         if (!response.ok) {
-          setMe("Guest");
+          setAccount({ name: "Guest", role: "user" });
           return;
         }
 
         const data = await response.json();
-        setMe(data?.user?.username || data?.username || "Guest");
+        setAccount({
+          name: data?.user?.username || data?.username || "Guest",
+          role: data?.user?.role || data?.role || "user",
+        });
       } catch (error) {
         console.error("Failed to load /api/me", error);
-        setMe("Guest");
+        setAccount({ name: "Guest", role: "user" });
       }
     };
 
     void loadMe();
   }, []);
+
+  const roleLabel = account.role
+    ? account.role.charAt(0).toUpperCase() + account.role.slice(1)
+    : "User";
 
   return (
     <>
@@ -75,18 +105,56 @@ export default function Sidebar({
       >
         <Toolbar sx={{ minHeight: APPBAR_HEIGHT, px: 1 }}>
           <Typography>{index}</Typography>
-          <Typography
-            variant="subtitle1"
-            noWrap
-            component="div"
-            sx={{ ml: "auto" }}
+          <Box
+            component="button"
+            type="button"
+            onClick={handleAccountMenuOpen}
+            sx={{
+              ml: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 1,
+              py: 0.5,
+              border: 0,
+              borderRadius: 1,
+              background: "transparent",
+              color: "inherit",
+              cursor: "pointer",
+              textAlign: "left",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.12)",
+              },
+            }}
           >
-            {me || "Account"}
-          </Typography>
-          {/* Account name from /api/me */}
-          <IconButton sx={{ ml: 1 }} href="/admin/setting"> 
-            <SettingsIcon sx={{ color: "#fff" }} />
-          </IconButton>
+            <Typography variant="subtitle1" noWrap component="div">
+              {account.name}
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.8, fontWeight: 500 }}>
+              {roleLabel}
+            </Typography>
+          </Box>
+
+          <Menu
+            anchorEl={accountMenuAnchor}
+            open={Boolean(accountMenuAnchor)}
+            onClose={handleAccountMenuClose}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <MenuItem onClick={handleSettingsClick}>
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Settings</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleLogoutClick}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Logout</ListItemText>
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
 

@@ -2,7 +2,7 @@ create table if not exists users (
     id serial primary key,
     username varchar(255) not null,
     password varchar(60) not null,
-    role varchar(255) not null,
+    role varchar(255) not null default "owner",
     created_at timestamptz not null default now()
 );
 

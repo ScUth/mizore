@@ -27,7 +27,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
         }
 
         const data = await response.json();
-        if (data?.user?.role !== "admin") {
+        if (data?.user?.role !== "admin" && data?.user?.role !== "owner") {
           throw new Error("Forbidden");
         }
       } catch {

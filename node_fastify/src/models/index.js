@@ -20,8 +20,13 @@ export const User = {
     },
 
     async findByUsername(username) {
-        const { rows } = await query('SELECT id, username, password, role, created_at FROM users WHERE username = $1', [username]);
+        const { rows } = await query('SELECT id, username, password, role, created_at FROM users WHERE LOWER(username) = LOWER($1)', [username]);
         return rows[0] || null;
+    },
+
+    async existsByUsername(username) {
+        const { rows } = await query('SELECT 1 FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1', [username]);
+        return rows.length > 0;
     },
 
     async deleteById(id) {
@@ -40,18 +45,23 @@ export const User = {
 
 export const subUser = {
     async findAll() {
-        const { rows } = await query('SELECT id, username, role, created_at FROM subUsers ORDER BY id');
+        const { rows } = await query('SELECT id, name AS username, role, created_at FROM subUsers ORDER BY id');
         return rows;
     },
 
     async findById(id) {
-        const { rows } = await query("SELECT id, username, role, created_at from subUsers where id = $1", [id]);
+        const { rows } = await query('SELECT id, name AS username, role, created_at FROM subUsers WHERE id = $1', [id]);
         return rows[0] || null;
+    },
+
+    async existsByUsername(username) {
+        const { rows } = await query('SELECT 1 FROM subUsers WHERE LOWER(name) = LOWER($1) LIMIT 1', [username]);
+        return rows.length > 0;
     },
 
     async create(username, password, role, parentUserId) {
         const { rows } = await query(
-            'INSERT INTO subUsers (username, password, role, user_id) VALUES ($1, $2, $3, $4) RETURNING id, username, role, created_at',
+            'INSERT INTO subUsers (name, password, role, user_id) VALUES ($1, $2, $3, $4) RETURNING id, name AS username, role, created_at',
             [username, password, role, parentUserId]
         );
         return rows[0];

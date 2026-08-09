@@ -1,7 +1,7 @@
 # Mizore Project (indev)
 ## Tech Stacks and Requirement
 - NodeJS (Fastify, ESM)
-- NextJS (MUI)
+- NextJS (MUI, React)
 - Docker
 - PostgresSQL
 ## Installation (Backend)
@@ -22,7 +22,9 @@ npm i
 cd ..
 ```
 5. build the container
+> [!WARNING]
 > The container (now) will contain only backend (NodeJS) and database (PostgresSQL) and used the port 4000 and 5432 as such, if this port can't available on your machine, you can change the port via `.env`
+> 
 ```bash
 docker compose build
 ```

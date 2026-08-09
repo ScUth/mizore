@@ -309,12 +309,17 @@ export default function Account({ width = "100%" }: AccountProps) {
         body: JSON.stringify({ username, password, role: createRole, parentUserId }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error(`Create failed with status ${response.status}`);
+        throw new Error(
+          data.error ||
+            (response.status === 409
+              ? 'Username already exists.'
+              : `Create failed with status ${response.status}`),
+        );
       }
 
-      const data = await response.json();
-      const createdUser = data?.user ?? data;
+      const createdUser = data?.subUser ?? data;
 
       if (createdUser && typeof createdUser === "object") {
         setUsers((prev) => [createdUser as UserRow, ...prev]);

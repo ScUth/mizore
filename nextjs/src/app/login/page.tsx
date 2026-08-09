@@ -152,8 +152,13 @@ export default function LoginPage() {
               Token preview: {tokenPreview}
             </Typography> */}
 
-            <Grid container sx={{ justifyContent: "flex-end" }}>
-              <Grid>
+            <Grid container sx={{ justifyContent: "space-between" }}>
+              <Grid sx={{justifyContent: "flex-start"}}>
+                <Link href="/createUser" variant="body2">
+                  Create user
+                </Link>
+              </Grid>
+              <Grid sx={{justifyContent: "flex-end"}}>
                 <Link href="#" variant="body2">
                   Forgot password?
                 </Link>

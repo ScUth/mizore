@@ -89,7 +89,16 @@ export async function getAllUsers(request, reply) {
 
 export async function createUser(request, reply) {
     const user = { username: request.body.username, password: request.body.password, role: request.body.role };
+    if (!user.username || !user.password) {
+        return reply.status(400).send({ error: 'Username and password are required' });
+    }
+
     try {
+        const usernameTaken = await services.existsUsername(user.username);
+        if (usernameTaken) {
+            return reply.status(409).send({ error: 'Username already exists' });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(user.password, salt);
         user.password = hashedPassword;
@@ -177,7 +186,15 @@ export async function updateUser(request, reply) {
 
 export async function createdSubUser(request, reply) {
     const subUser = { username: request.body.username, password: request.body.password, role: request.body.role, parentUserId: request.body.parentUserId };
+    if (!subUser.username || !subUser.password) {
+        return reply.status(400).send({ error: 'Username and password are required' });
+    }
+
     try {
+        const usernameTaken = await services.existsUsername(subUser.username);
+        if (usernameTaken) {
+            return reply.status(409).send({ error: 'Username already exists' });
+        }
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(subUser.password, salt);
         subUser.password = hashedPassword;
