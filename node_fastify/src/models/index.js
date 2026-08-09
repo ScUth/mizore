@@ -85,5 +85,10 @@ export const Path = {
             [name, path, user_id]
         );
         return rows[0];
+    },
+
+    async getAllByUserId(user_id) {
+        const { rows } = await query("select id, name, path from paths where user_id = $1 order by id", [user_id]);
+        return rows;
     }
 }

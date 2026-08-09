@@ -2,6 +2,7 @@
 import { Box, CssBaseline } from "@mui/material";
 import * as React from "react";
 import AdminGuard from "../components/adminGuard";
+import AddPathDialog from "../components/addpath";
 import Sidebar from "../../component/sidebar";
 import SettingBar from "../components/settingBar";
 import Account from "./components/account";
@@ -12,14 +13,12 @@ export const APPBAR_HEIGHT = { xs: 56, sm: 30 };
 
 export default function Setting() {
   const [openAddPathDialog, setOpenAddPathDialog] = React.useState(false);
-  const [Path, setPath] = React.useState("");
 
   const handleAddPathClickOpen = () => {
     setOpenAddPathDialog(true);
   };
 
   const handleAddPathClose = () => {
-    setPath("");
     setOpenAddPathDialog(false);
   };
 
@@ -65,6 +64,8 @@ export default function Setting() {
           </Box>
         </Box>
       </Box>
+
+      <AddPathDialog open={openAddPathDialog} onClose={handleAddPathClose} />
     </Box>
     </AdminGuard>
   );

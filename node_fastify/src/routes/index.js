@@ -5,6 +5,7 @@ export default async function routes(fastify, opts) {
         reply.send({ hello: 'world' })
     })
 
+    // User
     fastify.get('/api/files/:filename', controllers.getFile)
     fastify.get('/api/list/:file', controllers.listFiles)
     fastify.get('/api/me', { preHandler: [controllers.authenticate] }, controllers.getCurrentUser)
@@ -20,4 +21,7 @@ export default async function routes(fastify, opts) {
     fastify.patch('/api/users/:id', { preHandler: [controllers.requireAdmin] }, controllers.updateUser)
     
     fastify.put('/api/users/:id', { preHandler: [controllers.requireAdmin] }, controllers.updateUser)
+
+    // Path
+    fastify.post('/api/paths', { preHandler: [controllers.authenticate] }, controllers.createPath)
 }
