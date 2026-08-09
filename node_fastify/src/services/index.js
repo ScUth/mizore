@@ -49,3 +49,7 @@ export async function updateUserById(id, user) {
 export async function createSubUser(subUserData) {
     return subUser.create(subUserData.username, subUserData.password, subUserData.role, subUserData.parentUserId);
 }
+
+export async function createPath(pathData) {
+    return Path.create(pathData.name, pathData.path, pathData.user_id);
+}
