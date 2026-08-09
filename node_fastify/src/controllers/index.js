@@ -58,7 +58,7 @@ export async function requireAdmin(request, reply) {
         return false
     }
 
-    if (request.user?.role !== 'admin') {
+    if (request.user?.role !== 'admin' && request.user?.role !== 'owner') {
         reply.status(403).send({ error: 'Admin access required' })
         return false
     }

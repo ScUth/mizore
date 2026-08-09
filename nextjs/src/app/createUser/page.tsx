@@ -23,7 +23,7 @@ export default function CreateUserPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 	const [confirmation, setConfirmation] = useState("");
-  const [role, setRole] = useState("Owner");
+  const [role, setRole] = useState("owner");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -72,7 +72,9 @@ export default function CreateUserPage() {
       );
       setUsername("");
       setPassword("");
-			redirect("/login");
+			setConfirmation("");
+			// redirect("/login");
+			window.location.assign("/login");
       // setRole("user");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create user.");
