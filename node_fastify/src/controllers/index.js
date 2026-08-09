@@ -8,6 +8,17 @@ export async function getFile(request, reply) {
     return reply.sendFile(filename) // fastify-static resolves relative to its registered root
 }
 
+export async function listFiles(request, reply) {
+    const { file } = request.params
+    try {
+        const files = await services.listFiles(file)
+        reply.send({ files })
+    } catch (error) {
+        request.log.error(error)
+        reply.status(500).send({ error: 'Failed to list files' })
+    }
+}
+
 export async function createPath(request, reply) {
     const { path } = { name: request.body.name, path: request.body.path, user_id: request.body.user_id }
     try {
