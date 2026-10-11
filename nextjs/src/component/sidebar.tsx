@@ -4,7 +4,9 @@ import * as React from "react";
 import {
   AppBar,
   Box,
+  Button,
   Drawer,
+  IconButton,
   List,
   ListItem,
   ListItemButton,
@@ -19,8 +21,13 @@ import HomeIcon from "@mui/icons-material/Home";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { FolderOutlined } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
+import AddPathDialog from "./addpath";
+import CustomDialog from "./dialog";
 
 const drawerWidth = 240;
 export const APPBAR_HEIGHT = { xs: 56, sm: 30 };
@@ -39,6 +46,12 @@ export default function Sidebar({
   const [account, setAccount] = React.useState<{ name: string; role: string; id?: string }>({ name: "Account", role: "user" });
   const [paths, setPaths] = React.useState<any[]>([]);
   const [accountMenuAnchor, setAccountMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const [pathMenuAnchor, setPathMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const [actionPath, setActionPath] = React.useState<any | null>(null);
+  const [editingPath, setEditingPath] = React.useState<any | null>(null);
+  const [deletingPath, setDeletingPath] = React.useState<any | null>(null);
+  const [deleteError, setDeleteError] = React.useState("");
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAccountMenuAnchor(event.currentTarget);
@@ -57,6 +70,69 @@ export default function Sidebar({
     handleAccountMenuClose();
     window.localStorage.removeItem("accessToken");
     router.push("/login");
+  };
+
+  const handlePathMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    path: any,
+  ) => {
+    event.stopPropagation();
+    setActionPath(path);
+    setPathMenuAnchor(event.currentTarget);
+  };
+
+  const handlePathMenuClose = () => {
+    setPathMenuAnchor(null);
+  };
+
+  const handleDeletePath = async () => {
+    const pathId = deletingPath?.id ?? deletingPath?._id;
+    const token = window.localStorage.getItem("accessToken");
+    if (pathId == null) {
+      setDeleteError("This path cannot be deleted because it has no ID.");
+      return;
+    }
+    if (!token) {
+      setDeleteError("You must be signed in to delete a path.");
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/paths/${encodeURIComponent(String(pathId))}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to delete path (${response.status}).`);
+      }
+
+      setPaths((currentPaths) =>
+        currentPaths.filter(
+          (path) => String(path.id ?? path._id) !== String(pathId),
+        ),
+      );
+      if (
+        String(index) === String(deletingPath.path) ||
+        String(index) === String(deletingPath.name)
+      ) {
+        router.push("/admin");
+      }
+      setDeletingPath(null);
+    } catch (error) {
+      console.error("Failed to delete path", error);
+      setDeleteError(
+        error instanceof Error ? error.message : "Failed to delete path.",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   React.useEffect(() => {
@@ -232,12 +308,24 @@ export default function Sidebar({
           <Box sx={{ minHeight: 0, overflowY: "auto" }}>
             <List sx={{ pt: 0 }}>
             {paths.map((p, i) => (
-              <ListItem key={p.id || p._id || i} disablePadding>
+              <ListItem
+                key={p.id || p._id || i}
+                disablePadding
+                secondaryAction={
+                  <IconButton
+                    edge="end"
+                    aria-label={`Actions for ${p.name || p.path || `Path ${i + 1}`}`}
+                    onClick={(event) => handlePathMenuOpen(event, p)}
+                    size="small"
+                    sx={{ mr: 0.5 }}
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                }
+              >
                 <ListItemButton
-                  selected={
-                    String(index) === String(p.path ?? p.name ?? p.label ?? "")
-                  }
                   sx={{
+                    pr: 6,
                     "&.Mui-selected": {
                       backgroundColor: "action.selected",
                       borderLeft: 3,
@@ -247,6 +335,9 @@ export default function Sidebar({
                       backgroundColor: "action.selected",
                     },
                   }}
+                  selected={
+                    String(index) === String(p.path ?? p.name ?? p.label ?? "")
+                  }
                   onClick={() => {
                     const rawPath = p.path ?? p.name ?? p.label ?? p._id ?? p.id ?? String(i);
                     const pathName = p.name ?? p.label ?? rawPath;
@@ -270,6 +361,88 @@ export default function Sidebar({
           </Box>
         </Drawer>
       </Box>
+
+      <Menu
+        anchorEl={pathMenuAnchor}
+        open={Boolean(pathMenuAnchor)}
+        onClose={handlePathMenuClose}
+      >
+        <MenuItem
+          onClick={() => {
+            setEditingPath(actionPath);
+            handlePathMenuClose();
+          }}
+        >
+          <ListItemIcon>
+            <EditOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Edit path</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setDeleteError("");
+            setDeletingPath(actionPath);
+            handlePathMenuClose();
+          }}
+        >
+          <ListItemIcon>
+            <DeleteOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Delete path</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      <AddPathDialog
+        open={Boolean(editingPath)}
+        onClose={() => setEditingPath(null)}
+        pathToEdit={editingPath}
+        onSaved={(updatedPath) => {
+          const editedId = updatedPath.id ?? updatedPath._id;
+          setPaths((currentPaths) =>
+            currentPaths.map((path) =>
+              String(path.id ?? path._id) === String(editedId)
+                ? { ...path, ...updatedPath }
+                : path,
+            ),
+          );
+          if (String(index) === String(editingPath?.path)) {
+            router.push(
+              `/admin/${encodeURIComponent(updatedPath.name)}?path=${encodeURIComponent(updatedPath.path)}`,
+            );
+          }
+          setEditingPath(null);
+        }}
+      />
+
+      <CustomDialog
+        open={Boolean(deletingPath)}
+        onClose={() => {
+          if (!isDeleting) setDeletingPath(null);
+        }}
+        title="Delete Path"
+        content={`Are you sure you want to delete "${deletingPath?.name ?? deletingPath?.path ?? "this path"}"?`}
+        errorMessage={deleteError}
+        actions={
+          <>
+            <Button
+              onClick={() => setDeletingPath(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="error"
+              variant="contained"
+              onClick={() => void handleDeletePath()}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </>
+        }
+      >
+        <></>
+      </CustomDialog>
     </>
   );
 }

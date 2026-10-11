@@ -32,9 +32,23 @@ function decodeTokenPayload(token: string | null) {
 export default function AddPathDialog({
   open,
   onClose,
+  pathToEdit = null,
+  onSaved,
 }: {
   open: boolean;
   onClose: () => void;
+  pathToEdit?: {
+    id?: string | number;
+    _id?: string | number;
+    name?: string;
+    path?: string;
+  } | null;
+  onSaved?: (path: {
+    id?: string | number;
+    _id?: string | number;
+    name: string;
+    path: string;
+  }) => void;
 }) {
   const [path, setPath] = React.useState("");
   const [pathName, setPathName] = React.useState("");
@@ -49,8 +63,13 @@ export default function AddPathDialog({
   React.useEffect(() => {
     if (!open) {
       resetForm();
+      return;
     }
-  }, [open, resetForm]);
+
+    setPath(pathToEdit?.path ?? "");
+    setPathName(pathToEdit?.name ?? "");
+    setErrorMessage("");
+  }, [open, pathToEdit, resetForm]);
 
   const handleClose = () => {
     resetForm();
@@ -67,24 +86,36 @@ export default function AddPathDialog({
     const trimmedPath = path.trim();
     const trimmedName = pathName.trim();
 
-    if (userId == null || !token) {
-      setErrorMessage("You must be signed in to add a path.");
+    if (!token || (!pathToEdit && userId == null)) {
+      setErrorMessage(
+        `You must be signed in to ${pathToEdit ? "edit" : "add"} a path.`,
+      );
       return;
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/paths`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const pathId = pathToEdit?.id ?? pathToEdit?._id;
+      if (pathToEdit && pathId == null) {
+        throw new Error("This path cannot be edited because it has no ID.");
+      }
+
+      const response = await fetch(
+        pathToEdit
+          ? `${API_BASE}/api/paths/${encodeURIComponent(String(pathId))}`
+          : `${API_BASE}/api/paths`,
+        {
+          method: pathToEdit ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(
+            pathToEdit
+              ? { path: trimmedPath, name: trimmedName }
+              : { path: trimmedPath, name: trimmedName, user_id: userId },
+          ),
         },
-        body: JSON.stringify({
-          path: trimmedPath,
-          name: trimmedName,
-          user_id: userId,
-        }),
-      });
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -106,35 +137,50 @@ export default function AddPathDialog({
           // The response may contain a plain-text error.
         }
 
-        throw new Error(message || `Failed to create path (${response.status}).`);
+        throw new Error(
+          message ||
+            `Failed to ${pathToEdit ? "update" : "create"} path (${response.status}).`,
+        );
       }
 
       handleClose();
+      onSaved?.({
+        id: pathToEdit?.id,
+        _id: pathToEdit?._id,
+        name: trimmedName,
+        path: trimmedPath,
+      });
     } catch (error) {
-      console.error("Failed to add path", error);
+      console.error(`Failed to ${pathToEdit ? "edit" : "add"} path`, error);
       setErrorMessage(
-        error instanceof Error ? error.message : "Failed to create path.",
+        error instanceof Error
+          ? error.message
+          : `Failed to ${pathToEdit ? "update" : "create"} path.`,
       );
     }
   };
 
   return (
-      <CustomDialog
-        open={open}
-        onClose={handleClose}
-        title={`Add Path`}
-        content="Enter details for the new path."
-        errorMessage={errorMessage}
-        onSubmit={handleSubmit}
-        actions={
-          <>
-            <Button onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="contained">
-              Save
-            </Button>
-          </>
-        }
-      >
+    <CustomDialog
+      open={open}
+      onClose={handleClose}
+      title={pathToEdit ? "Edit Path" : "Add Path"}
+      content={
+        pathToEdit
+          ? "Update this path's details."
+          : "Enter details for the new path."
+      }
+      errorMessage={errorMessage}
+      onSubmit={handleSubmit}
+      actions={
+        <>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button type="submit" variant="contained">
+            Save
+          </Button>
+        </>
+      }
+    >
         <TextField
           autoFocus
           fullWidth
@@ -153,6 +199,6 @@ export default function AddPathDialog({
           margin="normal"
           required
         />
-      </CustomDialog>
+    </CustomDialog>
   );
 }

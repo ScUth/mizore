@@ -4,7 +4,7 @@ import * as React from "react";
 import AdminGuard from "../components/adminGuard";
 import AddPathDialog from "../../../component/addpath";
 import Sidebar from "../../../component/sidebar";
-import SettingBar from "../components/settingBar";
+import SettingBar from "./components/settingBar";
 import Account from "./components/account";
 
 const drawerWidth = 240;

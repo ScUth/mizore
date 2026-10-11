@@ -44,3 +44,11 @@ export async function createPath(pathData) {
 export async function getAllPathsByUserId(user_id) {
     return Path.getAllByUserId(user_id)
 }
+
+export async function deletePath(id) {
+    return Path.deleteById(id)
+}
+
+export async function updatePath(id, name, path) {
+    return Path.updateById(id, name, path)
+}

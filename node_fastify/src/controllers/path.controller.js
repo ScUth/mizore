@@ -41,3 +41,45 @@ export async function getAllPathsByUserId(request, reply) {
         reply.status(500).send({ error: 'Failed to retrieve paths' });
     }
 }
+
+export async function deletePath(request, reply) {
+    const { id } = request.params ?? {}
+    if (!id) {
+        return reply.status(400).send({ error: 'Path ID is required' });
+    }
+
+    try {
+        const deleted = await pathService.deletePath(id);
+        if (!deleted) {
+            return reply.status(404).send({ error: 'Path not found' });
+        }
+        reply.send({ message: 'Path deleted successfully' });
+    } catch (error) {
+        request.log.error(error);
+        reply.status(500).send({ error: 'Failed to delete path' });
+    }
+}
+
+export async function updatePath(request, reply) {
+    const { id } = request.params ?? {}
+    const { name, path } = request.body ?? {}
+
+    if (!id) {
+        return reply.status(400).send({ error: 'Path ID is required' });
+    }
+
+    if (!name || !path) {
+        return reply.status(400).send({ error: 'Name and path are required' });
+    }
+
+    try {
+        const updated = await pathService.updatePath(id, name, path);
+        if (!updated) {
+            return reply.status(404).send({ error: 'Path not found' });
+        }
+        reply.send({ message: 'Path updated successfully' });
+    } catch (error) {
+        request.log.error(error);
+        reply.status(500).send({ error: 'Failed to update path' });
+    }
+}

@@ -23,4 +23,17 @@ export const Path = {
         const { rows } = await query('SELECT id, name, path FROM paths WHERE user_id = $1 ORDER BY id', [user_id])
         return rows
     },
+
+    async deleteById(id) {
+        const { rowCount } = await query('DELETE FROM paths WHERE id = $1', [id])
+        return rowCount > 0
+    },
+
+    async updateById(id, name, path) {
+        const { rowCount } = await query(
+            'UPDATE paths SET name = $1, path = $2 WHERE id = $3',
+            [name, path, id]
+        )
+        return rowCount > 0
+    }
 }
