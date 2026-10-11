@@ -126,12 +126,16 @@ Key environment variables:
 
 ## Database Migrations
 
-If you have database migrations, run them before starting the app:
+The initial schema is only applied when PostgreSQL initializes an empty data
+volume. For an existing database, apply the `allowed_subpath` migration from the
+repository root before using path creation or editing:
 
 ```bash
-# Execute migration script in the backend container
-docker-compose exec backend node scripts/migrate.js
+docker compose exec -T postgres psql -U "${DB_USER:-postgres}" -d "${DB_NAME:-mizore}" < postgres/migrations/001_add_allowed_subpath.sql
 ```
+
+The migration is safe to run more than once. Existing paths default to allowing
+child-folder access.
 
 ## Health Checks
 
