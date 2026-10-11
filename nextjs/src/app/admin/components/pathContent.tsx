@@ -15,7 +15,7 @@ import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
-import AddPathDialog from "../../../components/sidebar/addpath";
+import AddPathDialog from "@/components/sidebar/addpath";
 import Sidebar, { APPBAR_HEIGHT } from "../../../components/sidebar";
 
 const drawerWidth = 240;
@@ -62,6 +62,132 @@ function getParentPath(path: string) {
   const normalizedPath = normalizePath(path);
   const separatorIndex = normalizedPath.lastIndexOf("/");
   return separatorIndex < 0 ? "" : normalizedPath.slice(0, separatorIndex);
+}
+// Shared size so every card's preview area is identical
+const THUMB_HEIGHT = 200;
+
+function PdfCover({ filePath, name }: { filePath: string; name: string }) {
+  const { request } = useAppContext();
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [status, setStatus] = React.useState<"idle" | "ready" | "error">(
+    "idle",
+  );
+  const encodedPath = encodeURIComponent(normalizePath(filePath));
+
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    let loadingTask: { destroy: () => Promise<void> } | null = null;
+    let renderTask: { cancel: () => void } | null = null;
+    const controller = new AbortController();
+
+    const loadPreview = async () => {
+      try {
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+          "pdfjs-dist/build/pdf.worker.min.mjs",
+          import.meta.url,
+        ).toString();
+
+        const response = await request(`${API_BASE}/api/files/${encodedPath}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to load PDF preview (${response.status})`);
+        }
+        const data = new Uint8Array(await response.arrayBuffer());
+        if (cancelled) return;
+
+        const task = pdfjs.getDocument({ data });
+        loadingTask = task;
+        const pdf = await task.promise;
+        const page = await pdf.getPage(1); // cover page only
+        if (cancelled) return;
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        // Scale so the page width fills the card, sharp on HiDPI screens
+        const baseViewport = page.getViewport({ scale: 1 });
+        const targetWidth =
+          container.clientWidth * (window.devicePixelRatio || 1);
+        const viewport = page.getViewport({
+          scale: targetWidth / baseViewport.width,
+        });
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const canvasContext = canvas.getContext("2d");
+        if (!canvasContext) return;
+
+        const render = page.render({ canvas, canvasContext, viewport });
+        renderTask = render;
+        await render.promise;
+        if (!cancelled) setStatus("ready");
+      } catch (error) {
+        if (!cancelled && !controller.signal.aborted) {
+          console.error(`Failed to load PDF preview for "${name}"`, error);
+          setStatus("error");
+        }
+      }
+    };
+
+    // Only load when the card scrolls near the viewport
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer.disconnect();
+          void loadPreview();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(container);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      observer.disconnect();
+      renderTask?.cancel();
+      void loadingTask?.destroy();
+    };
+  }, [encodedPath, name, request]);
+
+  return (
+    <Box
+      ref={containerRef}
+      role="img"
+      aria-label={`${name} cover preview`}
+      title={status === "error" ? `Preview unavailable for ${name}` : name}
+      sx={{
+        position: "relative",
+        width: "100%",
+        height: THUMB_HEIGHT,
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "action.hover",
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain", // fit the whole page, no cropping
+          objectPosition: "center", // center it in the box
+          display: status === "ready" ? "block" : "none",
+        }}
+      />
+      {status !== "ready" && (
+        <DescriptionOutlinedIcon color="action" sx={{ fontSize: 42 }} />
+      )}
+    </Box>
+  );
 }
 
 export default function PathContent({
@@ -226,6 +352,7 @@ export default function PathContent({
             {listItems.map((item, index) => {
               const name = getItemName(item);
               const folder = isFolder(item, name);
+              const pdfFile = !folder && /\.pdf$/i.test(name);
               const Icon = folder
                 ? FolderOutlinedIcon
                 : DescriptionOutlinedIcon;
@@ -248,10 +375,28 @@ export default function PathContent({
                         gap: 1.5,
                       }}
                     >
-                      <Icon
-                        color={folder ? "warning" : "action"}
-                        sx={{ fontSize: 42 }}
-                      />
+                      {pdfFile ? (
+                        <PdfCover
+                          filePath={`${normalizePath(currentPath)}/${name}`}
+                          name={name}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            width: "100%",
+                            height: THUMB_HEIGHT,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            bgcolor: "action.hover",
+                          }}
+                        >
+                          <Icon
+                            color={folder ? "warning" : "action"}
+                            sx={{ fontSize: 42 }}
+                          />
+                        </Box>
+                      )}
                       <Typography
                         variant="body2"
                         title={name}

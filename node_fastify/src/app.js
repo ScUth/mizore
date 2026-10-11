@@ -5,7 +5,10 @@ import routes from './routes/index.js'
 import config from './config/storage.js'
 
 export default async function buildApp() {
-    const fastify = Fastify({ logger: true })
+    const fastify = Fastify({
+        logger: true,
+        routerOptions: { maxParamLength: 4096 },
+    })
 
     await fastify.register(fastifyStatic, {
         root: config.sharedFolder
