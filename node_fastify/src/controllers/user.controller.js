@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt'
 import { authenticate as authenticateUser } from './auth.controller.js'
-import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js'
 import * as userService from '../services/user.service.js'
 
 export { authenticateUser as authenticate }

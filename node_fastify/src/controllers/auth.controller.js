@@ -1,4 +1,6 @@
-import { verifyAccessToken } from '../utils/jwt.js'
+import { verifyAccessToken, generateAccessToken, generateRefreshToken } from '../utils/jwt.js'
+import * as userService from '../services/user.service.js'
+import bcrypt from 'bcrypt'
 
 export async function authenticate(request, reply) {
     const authHeader = request.headers.authorization
