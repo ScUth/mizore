@@ -290,6 +290,15 @@ export default function PathContent({
     navigateToFolder(`${normalizePath(currentPath)}/${name}`);
   };
 
+  const openPdf = (name: string) => {
+    const filePath = normalizePath(`${normalizePath(currentPath)}/${name}`);
+    window.open(
+      `/admin/pdf-viewer?file=${encodeURIComponent(filePath)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
   const goUp = () => {
     if (normalizePath(currentPath) === normalizePath(selectedPath)) {
       return;
@@ -365,8 +374,10 @@ export default function PathContent({
                 >
                   <CardActionArea
                     sx={{ height: "100%" }}
-                    disabled={!folder || !allowedSubpath}
-                    onClick={() => enterFolder(name)}
+                    disabled={(!folder && !pdfFile) || !allowedSubpath}
+                    onClick={() =>
+                      folder ? enterFolder(name) : openPdf(name)
+                    }
                   >
                     <CardContent
                       sx={{
