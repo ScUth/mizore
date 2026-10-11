@@ -26,6 +26,8 @@ test('creating a path rejects a request without a token', async () => {
         payload: { name: 'Documents', path: '/documents', user_id: 1 },
     })
 
+
+
     assert.equal(response.statusCode, 401)
     assert.deepEqual(response.json(), { error: 'Authentication token is required' })
 })
@@ -69,7 +71,29 @@ test('updating a path updates the matching record', async (t) => {
 
     assert.equal(response.statusCode, 200)
     assert.deepEqual(response.json(), { message: 'Path updated successfully' })
-    assert.deepEqual(receivedArgs, ['7', 'Work', '/work'])
+    assert.deepEqual(receivedArgs, ['7', 'Work', '/work', null])
+})
+
+test('updating a path saves whether child folders are allowed', async (t) => {
+    let receivedArgs
+    t.mock.method(Path, 'updateById', async (...args) => {
+        receivedArgs = args
+        return true
+    })
+
+    const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/paths/7',
+        headers,
+        payload: {
+            name: 'Work',
+            path: '/work',
+            allowed_subpath: false,
+        },
+    })
+
+    assert.equal(response.statusCode, 200)
+    assert.deepEqual(receivedArgs, ['7', 'Work', '/work', false])
 })
 
 test('updating a path returns not found when the record does not exist', async (t) => {

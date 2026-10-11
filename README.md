@@ -53,4 +53,8 @@ pnpm dev
 # or
 bun dev
 ```
+
+## Note (For DEV)
+- In this app must have maximum of one **Owner**.
+
 *[Mizore Yoroizuka](https://tv2nd.anime-eupho.com/character/mizore/)*

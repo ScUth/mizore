@@ -1,11 +1,12 @@
 import * as pathService from '../services/path.service.js'
 
 export async function createPath(request, reply) {
-    const { name, path, user_id } = request.body ?? {}
+    const { name, path, user_id, allowed_subpath } = request.body ?? {}
     const pathData = {
         name,
         path,
         user_id: user_id ?? request.user?.id,
+        allowed_subpath,
     }
 
     if (!pathData.name || !pathData.path || !pathData.user_id) {
@@ -62,7 +63,7 @@ export async function deletePath(request, reply) {
 
 export async function updatePath(request, reply) {
     const { id } = request.params ?? {}
-    const { name, path } = request.body ?? {}
+    const { name, path, allowed_subpath } = request.body ?? {}
 
     if (!id) {
         return reply.status(400).send({ error: 'Path ID is required' });
@@ -73,7 +74,12 @@ export async function updatePath(request, reply) {
     }
 
     try {
-        const updated = await pathService.updatePath(id, name, path);
+        const updated = await pathService.updatePath(
+            id,
+            name,
+            path,
+            typeof allowed_subpath === 'boolean' ? allowed_subpath : null,
+        );
         if (!updated) {
             return reply.status(404).send({ error: 'Path not found' });
         }

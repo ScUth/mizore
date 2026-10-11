@@ -7,10 +7,12 @@ import {
   CardActionArea,
   CardContent,
   CssBaseline,
+  Button,
   Typography,
 } from "@mui/material";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import AddPathDialog from "../../../component/addpath";
 import Sidebar, { APPBAR_HEIGHT } from "../../../component/sidebar";
 
@@ -50,6 +52,16 @@ function isFolder(item: unknown, name: string) {
   return !name.includes(".");
 }
 
+function normalizePath(path: string) {
+  return path.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+}
+
+function getParentPath(path: string) {
+  const normalizedPath = normalizePath(path);
+  const separatorIndex = normalizedPath.lastIndexOf("/");
+  return separatorIndex < 0 ? "" : normalizedPath.slice(0, separatorIndex);
+}
+
 export default function PathContent({
   selectedPath = "",
 }: {
@@ -59,19 +71,27 @@ export default function PathContent({
   const [listItems, setListItems] = React.useState<unknown[]>([]);
   const [loadingList, setLoadingList] = React.useState(false);
   const [listError, setListError] = React.useState("");
+  const [currentPath, setCurrentPath] = React.useState(selectedPath);
+  const [allowedSubpath, setAllowedSubpath] = React.useState(true);
 
   React.useEffect(() => {
-    if (!selectedPath) {
+    setCurrentPath(selectedPath);
+  }, [selectedPath]);
+
+  React.useEffect(() => {
+    if (!currentPath) {
       setListItems([]);
       setListError("");
+      setLoadingList(false);
       return;
     }
 
+    let cancelled = false;
     const loadPathContents = async () => {
       setListItems([]);
       setListError("");
       setLoadingList(true);
-      const trimmedPath = selectedPath.replace(/^[\\/]+/, "");
+      const trimmedPath = normalizePath(currentPath);
 
       try {
         const token = window.localStorage.getItem("accessToken");
@@ -88,26 +108,57 @@ export default function PathContent({
         }
 
         const data = await response.json();
-        setListItems(data?.files || (Array.isArray(data) ? data : []));
+        if (!cancelled) {
+          setListItems(data?.files || (Array.isArray(data) ? data : []));
+        }
       } catch (error) {
-        setListError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load list content",
-        );
+        if (!cancelled) {
+          setListError(
+            error instanceof Error
+              ? error.message
+              : "Failed to load list content",
+          );
+        }
       } finally {
-        setLoadingList(false);
+        if (!cancelled) {
+          setLoadingList(false);
+        }
       }
     };
 
     void loadPathContents();
-  }, [selectedPath]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPath]);
+
+  const enterFolder = (name: string) => {
+    if (
+      !allowedSubpath ||
+      !name ||
+      name === "." ||
+      name === ".." ||
+      /[\\/]/.test(name)
+    ) {
+      return;
+    }
+    setCurrentPath((current) => `${normalizePath(current)}/${name}`);
+  };
+
+  const goUp = () => {
+    if (normalizePath(currentPath) === normalizePath(selectedPath)) {
+      return;
+    }
+    setCurrentPath(getParentPath(currentPath));
+  };
 
   return (
     <>
       <CssBaseline />
       <Sidebar
         onAddPathClickOpen={() => setOpenAddPathDialog(true)}
+        onPathAccessChange={setAllowedSubpath}
         index={selectedPath || "Landing Page"}
       />
       <Box
@@ -125,11 +176,22 @@ export default function PathContent({
           width: { sm: `calc(100% - ${drawerWidth}px)` },
         }}
       >
-        <Typography variant="h5" gutterBottom>
-          {selectedPath
-            ? `Contents for ${selectedPath}`
-            : "Select a path to view its contents"}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          {normalizePath(currentPath) !== normalizePath(selectedPath) && (
+            <Button
+              onClick={goUp}
+              startIcon={<ArrowUpwardIcon />}
+              aria-label="Go to parent folder"
+            >
+              Up
+            </Button>
+          )}
+          <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
+            {selectedPath
+              ? `Contents for ${currentPath}`
+              : "Select a path to view its contents"}
+          </Typography>
+        </Box>
 
         {loadingList ? (
           <Typography>Loading contents...</Typography>
@@ -156,7 +218,11 @@ export default function PathContent({
                   variant="outlined"
                   sx={{ minWidth: 0 }}
                 >
-                  <CardActionArea sx={{ height: "100%" }}>
+                  <CardActionArea
+                    sx={{ height: "100%" }}
+                    disabled={!folder || !allowedSubpath}
+                    onClick={() => enterFolder(name)}
+                  >
                     <CardContent
                       sx={{
                         display: "flex",

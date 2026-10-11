@@ -37,9 +37,11 @@ const navItems = [{ text: "Home", icon: <HomeIcon />, href: "/" }];
 
 export default function Sidebar({
   onAddPathClickOpen,
+  onPathAccessChange,
   index,
 }: {
   onAddPathClickOpen: () => void;
+  onPathAccessChange?: (allowed: boolean) => void;
   index: string;
 }) {
   const router = useRouter();
@@ -192,6 +194,17 @@ export default function Sidebar({
     void loadMe();
   }, []);
 
+  React.useEffect(() => {
+    const selectedPath = paths.find(
+      (path) =>
+        String(index) === String(path.path ?? "") ||
+        String(index) === String(path.name ?? ""),
+    );
+    if (selectedPath) {
+      onPathAccessChange?.(selectedPath.allowed_subpath !== false);
+    }
+  }, [index, onPathAccessChange, paths]);
+
   const roleLabel = account.role
     ? account.role.charAt(0).toUpperCase() + account.role.slice(1)
     : "User";
@@ -341,6 +354,7 @@ export default function Sidebar({
                   onClick={() => {
                     const rawPath = p.path ?? p.name ?? p.label ?? p._id ?? p.id ?? String(i);
                     const pathName = p.name ?? p.label ?? rawPath;
+                    onPathAccessChange?.(p.allowed_subpath !== false);
                     router.push(`/admin/${encodeURIComponent(String(pathName))}?path=${encodeURIComponent(String(rawPath))}`);
                   }}
                 >
@@ -406,6 +420,7 @@ export default function Sidebar({
             ),
           );
           if (String(index) === String(editingPath?.path)) {
+            onPathAccessChange?.(updatedPath.allowed_subpath);
             router.push(
               `/admin/${encodeURIComponent(updatedPath.name)}?path=${encodeURIComponent(updatedPath.path)}`,
             );

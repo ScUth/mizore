@@ -38,7 +38,12 @@ export async function createPath(pathData) {
         throw error
     }
 
-    return Path.create(pathData.name, pathData.path, pathData.user_id)
+    return Path.create(
+        pathData.name,
+        pathData.path,
+        pathData.user_id,
+        pathData.allowed_subpath !== false,
+    )
 }
 
 export async function getAllPathsByUserId(user_id) {
@@ -49,6 +54,6 @@ export async function deletePath(id) {
     return Path.deleteById(id)
 }
 
-export async function updatePath(id, name, path) {
-    return Path.updateById(id, name, path)
+export async function updatePath(id, name, path, allowed_subpath) {
+    return Path.updateById(id, name, path, allowed_subpath)
 }

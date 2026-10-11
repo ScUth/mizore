@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Button, TextField } from "@mui/material";
+import { Button, FormControlLabel, Switch, TextField } from "@mui/material";
 import CustomDialog from "./dialog";
 // import AdminGuard from "../app/admin/components/adminGuard";
 
@@ -42,21 +42,25 @@ export default function AddPathDialog({
     _id?: string | number;
     name?: string;
     path?: string;
+    allowed_subpath?: boolean;
   } | null;
   onSaved?: (path: {
     id?: string | number;
     _id?: string | number;
     name: string;
     path: string;
+    allowed_subpath: boolean;
   }) => void;
 }) {
   const [path, setPath] = React.useState("");
   const [pathName, setPathName] = React.useState("");
+  const [allowedSubpath, setAllowedSubpath] = React.useState(true);
   const [errorMessage, setErrorMessage] = React.useState("");
 
   const resetForm = React.useCallback(() => {
     setPath("");
     setPathName("");
+    setAllowedSubpath(true);
     setErrorMessage("");
   }, []);
 
@@ -68,6 +72,7 @@ export default function AddPathDialog({
 
     setPath(pathToEdit?.path ?? "");
     setPathName(pathToEdit?.name ?? "");
+    setAllowedSubpath(pathToEdit?.allowed_subpath !== false);
     setErrorMessage("");
   }, [open, pathToEdit, resetForm]);
 
@@ -111,8 +116,17 @@ export default function AddPathDialog({
           },
           body: JSON.stringify(
             pathToEdit
-              ? { path: trimmedPath, name: trimmedName }
-              : { path: trimmedPath, name: trimmedName, user_id: userId },
+              ? {
+                  path: trimmedPath,
+                  name: trimmedName,
+                  allowed_subpath: allowedSubpath,
+                }
+              : {
+                  path: trimmedPath,
+                  name: trimmedName,
+                  user_id: userId,
+                  allowed_subpath: allowedSubpath,
+                },
           ),
         },
       );
@@ -149,6 +163,7 @@ export default function AddPathDialog({
         _id: pathToEdit?._id,
         name: trimmedName,
         path: trimmedPath,
+        allowed_subpath: allowedSubpath,
       });
     } catch (error) {
       console.error(`Failed to ${pathToEdit ? "edit" : "add"} path`, error);
@@ -198,6 +213,15 @@ export default function AddPathDialog({
           onChange={(event) => setPathName(event.target.value)}
           margin="normal"
           required
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={allowedSubpath}
+              onChange={(event) => setAllowedSubpath(event.target.checked)}
+            />
+          }
+          label="Allow access to child folders"
         />
     </CustomDialog>
   );
