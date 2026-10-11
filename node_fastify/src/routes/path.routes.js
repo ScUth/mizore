@@ -1,6 +1,7 @@
-import * as controllers from '../controllers/index.js'
+import * as pathControllers from '../controllers/path.controller.js'
+import * as authControllers from '../controllers/auth.controller.js'
 
 export default async function pathRoutes(fastify, opts) {
-    fastify.get('/api/paths/:userId', { preHandler: [controllers.authenticate] }, controllers.getAllPathsByUserId)
-    fastify.post('/api/paths', { preHandler: [controllers.authenticate] }, controllers.createPath)
+    fastify.get('/api/paths/:userId', { preHandler: [authControllers.authenticate] }, pathControllers.getAllPathsByUserId)
+    fastify.post('/api/paths', { preHandler: [authControllers.authenticate] }, pathControllers.createPath)
 }
