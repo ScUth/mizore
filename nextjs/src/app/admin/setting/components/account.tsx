@@ -32,6 +32,7 @@ import {
   Typography,
 } from "@mui/material";
 import * as React from "react";
+import { useAppContext } from "@/context/AppContext";
 
 type UserRow = {
   id: number;
@@ -50,31 +51,10 @@ type SortDirection = "asc" | "desc";
 // Prefer an env var so this isn't hardcoded to one machine's LAN IP.
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
 
-function getStoredToken() {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  return window.localStorage.getItem("accessToken") ?? "";
-}
-
-function decodeTokenPayload(token: string | null) {
-  if (!token) return null;
-
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = window.atob(normalized);
-    return JSON.parse(decoded) as { id?: number; username?: string; role?: string };
-  } catch {
-    return null;
-  }
-}
-
-function getAuthHeaders(extraHeaders: Record<string, string> = {}) {
-  const token = getStoredToken();
+function getAuthHeaders(
+  token: string,
+  extraHeaders: Record<string, string> = {},
+) {
   return {
     Accept: "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -120,6 +100,7 @@ function avatarColors(seed: string) {
 }
 
 export default function Account({ width = "100%" }: AccountProps) {
+  const { request, user, accessToken } = useAppContext();
   const [users, setUsers] = React.useState<UserRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
@@ -160,9 +141,9 @@ export default function Account({ width = "100%" }: AccountProps) {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API_BASE}/api/users`, {
+      const response = await request(`${API_BASE}/api/users`, {
         cache: "no-store",
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(accessToken),
         signal,
       });
 
@@ -194,7 +175,7 @@ export default function Account({ width = "100%" }: AccountProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [request]);
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -281,7 +262,7 @@ export default function Account({ width = "100%" }: AccountProps) {
   const handleCreate = async () => {
     const username = createUsername.trim();
     const password = createPassword.trim();
-    const parentUserId = decodeTokenPayload(getStoredToken())?.id;
+    const parentUserId = user?.id;
 
     if (!username || !password) {
       setCreateError("Username and password are required.");
@@ -303,9 +284,9 @@ export default function Account({ width = "100%" }: AccountProps) {
     setCreateError("");
 
     try {
-      const response = await fetch(`${API_BASE}/api/users/createdSubUser`, {
+      const response = await request(`${API_BASE}/api/users/createdSubUser`, {
         method: "POST",
-        headers: getAuthHeaders({ "Content-Type": "application/json" }),
+        headers: getAuthHeaders(accessToken, { "Content-Type": "application/json" }),
         body: JSON.stringify({ username, password, role: createRole, parentUserId }),
       });
 
@@ -356,9 +337,9 @@ export default function Account({ width = "100%" }: AccountProps) {
     setSaveError("");
 
     try {
-      const response = await fetch(`${API_BASE}/api/users/${editingUser.id}`, {
+      const response = await request(`${API_BASE}/api/users/${editingUser.id}`, {
         method: "PATCH",
-        headers: getAuthHeaders({ "Content-Type": "application/json" }),
+        headers: getAuthHeaders(accessToken, { "Content-Type": "application/json" }),
         body: JSON.stringify({ username: editUsername, role: editRole }),
       });
 
@@ -402,9 +383,9 @@ export default function Account({ width = "100%" }: AccountProps) {
     setDeleteError("");
 
     try {
-      const response = await fetch(`${API_BASE}/api/users/${deletingUser.id}`, {
+      const response = await request(`${API_BASE}/api/users/${deletingUser.id}`, {
         method: "DELETE",
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(accessToken),
       });
 
       if (!response.ok) {

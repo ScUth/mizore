@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Alert,
   Box,
@@ -12,38 +13,15 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
-
-function decodeTokenPayload(token: string | null) {
-  if (!token) return null;
-
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = window.atob(normalized);
-    return JSON.parse(decoded);
-  } catch {
-    return null;
-  }
-}
+import { useAppContext } from "@/context/AppContext";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAppContext();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [tokenPayload, setTokenPayload] = useState<{
-    username?: string;
-    role?: string;
-  } | null>(null);
-
-  const tokenPreview = useMemo(() => {
-    if (!tokenPayload) return "No token yet";
-    return `user=${tokenPayload.username ?? "unknown"} role=${tokenPayload.role ?? "unknown"}`;
-  }, [tokenPayload]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,22 +29,8 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), password }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error ?? "Login failed");
-      }
-
-      window.localStorage.setItem("accessToken", data.accessToken);
-      window.localStorage.setItem("refreshToken", data.refreshToken);
-      window.localStorage.setItem("authUser", JSON.stringify(data.user));
-      setTokenPayload(decodeTokenPayload(data.accessToken));
-      window.location.assign("/admin");
+      await login({ username, password });
+      router.replace("/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -124,7 +88,7 @@ export default function LoginPage() {
               autoComplete="username"
               autoFocus
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(event) => setUsername(event.target.value)}
             />
             <TextField
               margin="normal"
@@ -136,7 +100,7 @@ export default function LoginPage() {
               id="password"
               autoComplete="current-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
             />
             <Button
               type="submit"
@@ -148,17 +112,13 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
 
-            {/* <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Token preview: {tokenPreview}
-            </Typography> */}
-
             <Grid container sx={{ justifyContent: "space-between" }}>
-              <Grid sx={{justifyContent: "flex-start"}}>
+              <Grid sx={{ justifyContent: "flex-start" }}>
                 <Link href="/createUser" variant="body2">
                   Create user
                 </Link>
               </Grid>
-              <Grid sx={{justifyContent: "flex-end"}}>
+              <Grid sx={{ justifyContent: "flex-end" }}>
                 <Link href="#" variant="body2">
                   Forgot password?
                 </Link>

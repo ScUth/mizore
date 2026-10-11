@@ -6,20 +6,16 @@ import {
   Box,
   Button,
   Container,
-  FormControl,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
-  SelectChangeEvent,
   TextField,
   Typography,
 } from "@mui/material";
-import { redirect } from "next/navigation";
+import { useAppContext } from "@/context/AppContext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
 
 export default function CreateUserPage() {
+  const { request } = useAppContext();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 	const [confirmation, setConfirmation] = useState("");
@@ -51,7 +47,7 @@ export default function CreateUserPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/users/createdUser`, {
+      const response = await request(`${API_BASE}/api/users/createdUser`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: trimmedUsername, password, role }),

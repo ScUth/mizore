@@ -2,46 +2,20 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
+import { useAppContext } from "@/context/AppContext";
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [ready, setReady] = React.useState(false);
+  const { user, accessToken, isLoading } = useAppContext();
+  const isAdmin = user?.role === "admin" || user?.role === "owner";
 
   React.useEffect(() => {
-    const verifyAdmin = async () => {
-      const token = window.localStorage.getItem("accessToken");
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
+    if (!isLoading && (!accessToken || (user && !isAdmin))) {
+      router.replace("/login");
+    }
+  }, [accessToken, isAdmin, isLoading, router, user]);
 
-      try {
-        const response = await fetch(`${API_BASE}/api/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.ok) {
-          throw new Error("Unauthorized");
-        }
-
-        const data = await response.json();
-        if (data?.user?.role !== "admin" && data?.user?.role !== "owner") {
-          throw new Error("Forbidden");
-        }
-      } catch {
-        router.replace("/login");
-        return;
-      }
-
-      setReady(true);
-    };
-
-    void verifyAdmin();
-  }, [router]);
-
-  if (!ready) {
+  if (isLoading || !accessToken || !user || !isAdmin) {
     return null;
   }
 

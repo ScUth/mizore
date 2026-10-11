@@ -2,32 +2,16 @@
 
 import * as React from "react";
 import { Button, FormControlLabel, Switch, TextField } from "@mui/material";
+import { useAppContext } from "@/context/AppContext";
 import CustomDialog from "./dialog";
-// import AdminGuard from "../app/admin/components/adminGuard";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
-
-function getStoredToken() {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  return window.localStorage.getItem("accessToken") ?? "";
-}
-
-function decodeTokenPayload(token: string | null) {
-  if (!token) return null;
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const pad = "=".repeat((4 - (normalized.length % 4)) % 4);
-    const decoded = window.atob(normalized + pad);
-    return JSON.parse(decoded) as { id?: number };
-  } catch {
-    return null;
-  }
-}
+type PathRecord = {
+  id?: string | number;
+  _id?: string | number;
+  name: string;
+  path: string;
+  allowed_subpath: boolean;
+};
 
 export default function AddPathDialog({
   open,
@@ -37,21 +21,10 @@ export default function AddPathDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  pathToEdit?: {
-    id?: string | number;
-    _id?: string | number;
-    name?: string;
-    path?: string;
-    allowed_subpath?: boolean;
-  } | null;
-  onSaved?: (path: {
-    id?: string | number;
-    _id?: string | number;
-    name: string;
-    path: string;
-    allowed_subpath: boolean;
-  }) => void;
+  pathToEdit?: Partial<PathRecord> | null;
+  onSaved?: (path: PathRecord) => void;
 }) {
+  const { user, accessToken, request, upsertPath } = useAppContext();
   const [path, setPath] = React.useState("");
   const [pathName, setPathName] = React.useState("");
   const [allowedSubpath, setAllowedSubpath] = React.useState(true);
@@ -81,17 +54,15 @@ export default function AddPathDialog({
     onClose();
   };
 
-  const token = getStoredToken();
-  const userId = decodeTokenPayload(token)?.id ?? null;
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
 
     const trimmedPath = path.trim();
     const trimmedName = pathName.trim();
+    const userId = user?.id;
 
-    if (!token || (!pathToEdit && userId == null)) {
+    if (!accessToken || (!pathToEdit && userId == null)) {
       setErrorMessage(
         `You must be signed in to ${pathToEdit ? "edit" : "add"} a path.`,
       );
@@ -104,30 +75,19 @@ export default function AddPathDialog({
         throw new Error("This path cannot be edited because it has no ID.");
       }
 
-      const response = await fetch(
+      const response = await request(
         pathToEdit
-          ? `${API_BASE}/api/paths/${encodeURIComponent(String(pathId))}`
-          : `${API_BASE}/api/paths`,
+          ? `/api/paths/${encodeURIComponent(String(pathId))}`
+          : "/api/paths",
         {
           method: pathToEdit ? "PATCH" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(
-            pathToEdit
-              ? {
-                  path: trimmedPath,
-                  name: trimmedName,
-                  allowed_subpath: allowedSubpath,
-                }
-              : {
-                  path: trimmedPath,
-                  name: trimmedName,
-                  user_id: userId,
-                  allowed_subpath: allowedSubpath,
-                },
-          ),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            path: trimmedPath,
+            name: trimmedName,
+            ...(pathToEdit ? {} : { user_id: userId }),
+            allowed_subpath: allowedSubpath,
+          }),
         },
       );
 
@@ -157,14 +117,17 @@ export default function AddPathDialog({
         );
       }
 
-      handleClose();
-      onSaved?.({
-        id: pathToEdit?.id,
-        _id: pathToEdit?._id,
+      const data = await response.json();
+      const savedPath: PathRecord = {
+        ...pathToEdit,
+        ...(data?.path ?? {}),
         name: trimmedName,
         path: trimmedPath,
         allowed_subpath: allowedSubpath,
-      });
+      };
+      upsertPath(savedPath);
+      handleClose();
+      onSaved?.(savedPath);
     } catch (error) {
       console.error(`Failed to ${pathToEdit ? "edit" : "add"} path`, error);
       setErrorMessage(
@@ -196,33 +159,33 @@ export default function AddPathDialog({
         </>
       }
     >
-        <TextField
-          autoFocus
-          fullWidth
-          label="Path"
-          placeholder="e.g. /api/users or C:\\Projects\\MyPath"
-          value={path}
-          onChange={(event) => setPath(event.target.value)}
-          margin="normal"
-          required
-        />
-        <TextField
-          fullWidth
-          label="Path Name"
-          value={pathName}
-          onChange={(event) => setPathName(event.target.value)}
-          margin="normal"
-          required
-        />
-        <FormControlLabel
-          control={
-            <Switch
-              checked={allowedSubpath}
-              onChange={(event) => setAllowedSubpath(event.target.checked)}
-            />
-          }
-          label="Allow access to child folders"
-        />
+      <TextField
+        autoFocus
+        fullWidth
+        label="Path"
+        placeholder="e.g. /api/users or C:\\Projects\\MyPath"
+        value={path}
+        onChange={(event) => setPath(event.target.value)}
+        margin="normal"
+        required
+      />
+      <TextField
+        fullWidth
+        label="Path Name"
+        value={pathName}
+        onChange={(event) => setPathName(event.target.value)}
+        margin="normal"
+        required
+      />
+      <FormControlLabel
+        control={
+          <Switch
+            checked={allowedSubpath}
+            onChange={(event) => setAllowedSubpath(event.target.checked)}
+          />
+        }
+        label="Allow access to child folders"
+      />
     </CustomDialog>
   );
 }

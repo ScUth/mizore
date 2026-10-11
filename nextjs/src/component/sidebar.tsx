@@ -26,13 +26,13 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { FolderOutlined } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
+import { useAppContext } from "@/context/AppContext";
 import AddPathDialog from "./addpath";
 import CustomDialog from "./dialog";
 
 const drawerWidth = 240;
 export const APPBAR_HEIGHT = { xs: 56, sm: 30 };
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
-
 const navItems = [{ text: "Home", icon: <HomeIcon />, href: "/" }];
 
 export default function Sidebar({
@@ -45,8 +45,25 @@ export default function Sidebar({
   index: string;
 }) {
   const router = useRouter();
-  const [account, setAccount] = React.useState<{ name: string; role: string; id?: string }>({ name: "Account", role: "user" });
-  const [paths, setPaths] = React.useState<any[]>([]);
+  const {
+    user,
+    setUser,
+    accessToken,
+    paths,
+    pathsLoading,
+    pathsError,
+    setPaths,
+    upsertPath,
+    removePath,
+    request,
+    clearSession,
+  } = useAppContext();
+  const token = accessToken;
+  const account = {
+    name: user?.username ?? (accessToken ? "Account" : "Guest"),
+    role: user?.role ?? "user",
+    id: user?.id,
+  };
   const [accountMenuAnchor, setAccountMenuAnchor] = React.useState<null | HTMLElement>(null);
   const [pathMenuAnchor, setPathMenuAnchor] = React.useState<null | HTMLElement>(null);
   const [actionPath, setActionPath] = React.useState<any | null>(null);
@@ -70,8 +87,8 @@ export default function Sidebar({
 
   const handleLogoutClick = () => {
     handleAccountMenuClose();
-    window.localStorage.removeItem("accessToken");
-    router.push("/login");
+    clearSession();
+    router.replace("/login");
   };
 
   const handlePathMenuOpen = (
@@ -87,14 +104,21 @@ export default function Sidebar({
     setPathMenuAnchor(null);
   };
 
+  const matchesSelectedPath = (candidate: any) => {
+    const candidateValues = [candidate?.path, candidate?.name, candidate?.label];
+
+    return candidateValues.some(
+      (value) => String(index) === String(value ?? ""),
+    );
+  };
+
   const handleDeletePath = async () => {
     const pathId = deletingPath?.id ?? deletingPath?._id;
-    const token = window.localStorage.getItem("accessToken");
     if (pathId == null) {
       setDeleteError("This path cannot be deleted because it has no ID.");
       return;
     }
-    if (!token) {
+    if (!accessToken) {
       setDeleteError("You must be signed in to delete a path.");
       return;
     }
@@ -102,7 +126,7 @@ export default function Sidebar({
     setIsDeleting(true);
     setDeleteError("");
     try {
-      const response = await fetch(
+      const response = await request(
         `${API_BASE}/api/paths/${encodeURIComponent(String(pathId))}`,
         {
           method: "DELETE",
@@ -115,15 +139,8 @@ export default function Sidebar({
         throw new Error(errorText || `Failed to delete path (${response.status}).`);
       }
 
-      setPaths((currentPaths) =>
-        currentPaths.filter(
-          (path) => String(path.id ?? path._id) !== String(pathId),
-        ),
-      );
-      if (
-        String(index) === String(deletingPath.path) ||
-        String(index) === String(deletingPath.name)
-      ) {
+      removePath(pathId);
+      if (matchesSelectedPath(deletingPath)) {
         router.push("/admin");
       }
       setDeletingPath(null);
@@ -139,37 +156,36 @@ export default function Sidebar({
 
   React.useEffect(() => {
     const loadMe = async () => {
-      const token = window.localStorage.getItem("accessToken");
-      if (!token) {
-        setAccount({ name: "Guest", role: "user" });
+      if (!accessToken) {
+        setUser(null);
         return;
       }
 
       try {
-        const response = await fetch(`${API_BASE}/api/me`, {
+        const response = await request(`${API_BASE}/api/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         if (!response.ok) {
-          setAccount({ name: "Guest", role: "user" });
+          setUser(null);
           return;
         }
 
         const data = await response.json();
         const userId = data?.user?.id || data?.id || undefined;
 
-        setAccount({
-          name: data?.user?.username || data?.username || "Guest",
-          role: data?.user?.role || data?.role || "user",
+        setUser(data?.user ?? {
           id: userId,
+          username: data?.username ?? "Guest",
+          role: data?.role ?? "user",
         });
 
         // Fetch user's paths if we have an id
         if (userId) {
           try {
-            const pResp = await fetch(`${API_BASE}/api/paths/${userId}`, {
+            const pResp = await request(`${API_BASE}/api/paths/${userId}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -187,12 +203,12 @@ export default function Sidebar({
         }
       } catch (error) {
         console.error("Failed to load /api/me", error);
-        setAccount({ name: "Guest", role: "user" });
+        setUser(null);
       }
     };
 
     void loadMe();
-  }, []);
+  }, [accessToken, request, setPaths, setUser]);
 
   React.useEffect(() => {
     const selectedPath = paths.find(
@@ -319,6 +335,16 @@ export default function Sidebar({
           </List>
 
           <Box sx={{ minHeight: 0, overflowY: "auto" }}>
+            {pathsLoading ? (
+              <Typography sx={{ px: 2, py: 1 }} color="text.secondary">
+                Loading paths...
+              </Typography>
+            ) : null}
+            {pathsError ? (
+              <Typography sx={{ px: 2, py: 1 }} color="error" variant="body2">
+                {pathsError}
+              </Typography>
+            ) : null}
             <List sx={{ pt: 0 }}>
             {paths.map((p, i) => (
               <ListItem
@@ -411,15 +437,8 @@ export default function Sidebar({
         onClose={() => setEditingPath(null)}
         pathToEdit={editingPath}
         onSaved={(updatedPath) => {
-          const editedId = updatedPath.id ?? updatedPath._id;
-          setPaths((currentPaths) =>
-            currentPaths.map((path) =>
-              String(path.id ?? path._id) === String(editedId)
-                ? { ...path, ...updatedPath }
-                : path,
-            ),
-          );
-          if (String(index) === String(editingPath?.path)) {
+          upsertPath(updatedPath);
+          if (matchesSelectedPath(editingPath)) {
             onPathAccessChange?.(updatedPath.allowed_subpath);
             router.push(
               `/admin/${encodeURIComponent(updatedPath.name)}?path=${encodeURIComponent(updatedPath.path)}`,

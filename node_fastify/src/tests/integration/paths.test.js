@@ -43,6 +43,22 @@ test('updating a path rejects a request without a token', async () => {
     assert.deepEqual(response.json(), { error: 'Authentication token is required' })
 })
 
+test('updating a path allows browser CORS preflight requests', async () => {
+    const response = await app.inject({
+        method: 'OPTIONS',
+        url: '/api/paths/7',
+        headers: {
+            origin: 'http://localhost:3000',
+            'access-control-request-method': 'PATCH',
+            'access-control-request-headers': 'authorization,content-type',
+        },
+    })
+
+    assert.equal(response.statusCode, 204)
+    assert.equal(response.headers['access-control-allow-origin'], '*')
+    assert.match(response.headers['access-control-allow-methods'], /PATCH/)
+})
+
 test('updating a path requires a name and path', async () => {
     const response = await app.inject({
         method: 'PATCH',

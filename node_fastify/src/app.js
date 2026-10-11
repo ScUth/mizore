@@ -1,5 +1,6 @@
 import Fastify from 'fastify'
 import fastifyStatic from '@fastify/static'
+import cors from '@fastify/cors'
 import routes from './routes/index.js'
 import config from './config/storage.js'
 
@@ -8,6 +9,11 @@ export default async function buildApp() {
 
     await fastify.register(fastifyStatic, {
         root: config.sharedFolder
+    })
+
+    await fastify.register(cors, {
+        origin: '*',
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     })
 
     await fastify.register(routes)

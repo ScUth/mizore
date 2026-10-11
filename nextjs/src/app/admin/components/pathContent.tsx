@@ -13,6 +13,8 @@ import {
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useAppContext } from "@/context/AppContext";
 import AddPathDialog from "../../../component/addpath";
 import Sidebar, { APPBAR_HEIGHT } from "../../../component/sidebar";
 
@@ -67,16 +69,20 @@ export default function PathContent({
 }: {
   selectedPath?: string;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { request, accessToken, currentPath, setCurrentPath } = useAppContext();
+  const folderPath = searchParams.get("folder");
   const [openAddPathDialog, setOpenAddPathDialog] = React.useState(false);
   const [listItems, setListItems] = React.useState<unknown[]>([]);
   const [loadingList, setLoadingList] = React.useState(false);
   const [listError, setListError] = React.useState("");
-  const [currentPath, setCurrentPath] = React.useState(selectedPath);
   const [allowedSubpath, setAllowedSubpath] = React.useState(true);
 
   React.useEffect(() => {
-    setCurrentPath(selectedPath);
-  }, [selectedPath]);
+    setCurrentPath(folderPath ?? selectedPath);
+  }, [folderPath, selectedPath, setCurrentPath]);
 
   React.useEffect(() => {
     if (!currentPath) {
@@ -94,8 +100,8 @@ export default function PathContent({
       const trimmedPath = normalizePath(currentPath);
 
       try {
-        const token = window.localStorage.getItem("accessToken");
-        const response = await fetch(
+        const token = accessToken;
+        const response = await request(
           `${API_BASE}/api/list/${encodeURIComponent(trimmedPath)}`,
           {
             headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -131,7 +137,19 @@ export default function PathContent({
     return () => {
       cancelled = true;
     };
-  }, [currentPath]);
+  }, [accessToken, currentPath, request]);
+
+  const navigateToFolder = (targetPath: string) => {
+    const normalizedTarget = normalizePath(targetPath);
+    const query = new URLSearchParams(searchParams.toString());
+    if (normalizedTarget === normalizePath(selectedPath)) {
+      query.delete("folder");
+    } else {
+      query.set("folder", normalizedTarget);
+    }
+    const queryString = query.toString();
+    router.push(queryString ? `${pathname}?${queryString}` : pathname);
+  };
 
   const enterFolder = (name: string) => {
     if (
@@ -143,14 +161,14 @@ export default function PathContent({
     ) {
       return;
     }
-    setCurrentPath((current) => `${normalizePath(current)}/${name}`);
+    navigateToFolder(`${normalizePath(currentPath)}/${name}`);
   };
 
   const goUp = () => {
     if (normalizePath(currentPath) === normalizePath(selectedPath)) {
       return;
     }
-    setCurrentPath(getParentPath(currentPath));
+    navigateToFolder(getParentPath(currentPath));
   };
 
   return (
