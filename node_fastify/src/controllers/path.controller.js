@@ -17,7 +17,12 @@ export async function createPath(request, reply) {
         reply.status(201).send({ path: newPath })
     } catch (error) {
         request.log.error(error)
-        reply.status(500).send({ error: 'Failed to create path' })
+
+        if (error instanceof Error && ['Path does not exist', 'Path must be a directory', 'Path is outside the shared folder'].includes(error.message)) {
+            return reply.status(400).send({ error: error.message })
+        }
+
+        return reply.status(500).send({ error: 'Failed to create path' })
     }
 }
 

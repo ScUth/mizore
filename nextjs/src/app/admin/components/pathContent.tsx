@@ -11,8 +11,8 @@ import {
 } from "@mui/material";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
-import AddPathDialog from "./addpath";
-import Sidebar, { APPBAR_HEIGHT } from "../../component/sidebar";
+import AddPathDialog from "../../../component/addpath";
+import Sidebar, { APPBAR_HEIGHT } from "../../../component/sidebar";
 
 const drawerWidth = 240;
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";

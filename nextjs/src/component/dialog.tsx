@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  Alert,
   Dialog,
   DialogActions,
   DialogContent,
@@ -16,6 +17,7 @@ interface CustomDialogProps {
   children: React.ReactNode;
   actions?: React.ReactNode;
   onSubmit?: (event: React.FormEvent<HTMLFormElement>) => void;
+  errorMessage?: string;
 }
 
 export default function CustomDialog({
@@ -26,6 +28,7 @@ export default function CustomDialog({
   children,
   actions,
   onSubmit,
+  errorMessage,
 }: CustomDialogProps) {
   return (
     <Dialog
@@ -48,6 +51,11 @@ export default function CustomDialog({
       <DialogContent>
         <DialogContentText>{content}</DialogContentText>
         {children}
+        {errorMessage && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {errorMessage}
+          </Alert>
+        )}
       </DialogContent>
       <DialogActions>
         {actions ?? (
