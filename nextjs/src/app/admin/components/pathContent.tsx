@@ -15,8 +15,8 @@ import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
-import AddPathDialog from "../../../component/addpath";
-import Sidebar, { APPBAR_HEIGHT } from "../../../component/sidebar";
+import AddPathDialog from "../../../components/sidebar/addpath";
+import Sidebar, { APPBAR_HEIGHT } from "../../../components/sidebar";
 
 const drawerWidth = 240;
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";

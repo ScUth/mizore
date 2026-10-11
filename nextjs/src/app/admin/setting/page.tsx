@@ -2,8 +2,8 @@
 import { Box, CssBaseline } from "@mui/material";
 import * as React from "react";
 import AdminGuard from "../components/adminGuard";
-import AddPathDialog from "../../../component/addpath";
-import Sidebar from "../../../component/sidebar";
+import AddPathDialog from "../../../components/sidebar/addpath";
+import Sidebar from "../../../components/sidebar";
 import SettingBar from "./components/settingBar";
 import Account from "./components/account";
 
