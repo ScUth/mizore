@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
       POSTGRES_DB: ${DB_NAME:-mizore}
     ports:
-      - "5432:5432"
+      - "${DB_PORT}:${DB_PORT}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -30,17 +30,17 @@ services:
       - /home/yuki:/home/yuki
     environment:
       HOST: 0.0.0.0
-      PORT: 4000
+      PORT: ${BACKEND_PORT}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-password}
       DB_HOST: postgres
       DB_NAME: ${DB_NAME:-mizore}
-      DB_PORT: 5432
+      DB_PORT: ${DB_PORT}
       SHARED_FOLDER: ${SHARED_FOLDER:-/files}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
     ports:
-      - "4000:4000"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
       postgres:
         condition: service_healthy

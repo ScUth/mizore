@@ -10,7 +10,8 @@ create table if not exists paths (
     id serial primary key,
     name varchar(255) not null,
     path text not null,
-    user_id serial references users(id)
+    user_id serial references users(id),
+    allowed_subpath BOOLEAN not null DEFAULT true
 );
 
 create table if not exists subUsers (

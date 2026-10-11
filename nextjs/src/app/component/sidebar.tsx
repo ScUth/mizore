@@ -19,6 +19,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
+import { FolderOutlined } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 
 const drawerWidth = 240;
@@ -194,13 +195,16 @@ export default function Sidebar({
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
               width: drawerWidth,
+              display: "flex",
+              flexDirection: "column",
               top: APPBAR_HEIGHT.sm + 10,
               height: `calc(100% - ${APPBAR_HEIGHT.sm + 10}px)`,
+              overflow: "hidden",
             },
           }}
           open
         >
-          <List>
+          <List sx={{ flexShrink: 0 }}>
             {navItems.map((item) => (
               <ListItem key={item.text} disablePadding>
                 <ListItemButton href={item.href}>
@@ -211,8 +215,10 @@ export default function Sidebar({
             ))}
           </List>
 
-          <Typography sx={{ m: 2 }}>Registered Path</Typography>
-          <List>
+          <Typography sx={{ m: 2, mb: 1, flexShrink: 0 }}>
+            Registered Path
+          </Typography>
+          <List sx={{ flexShrink: 0, pt: 0 }}>
             <ListItem disablePadding>
               <ListItemButton onClick={onAddPathClickOpen}>
                 <ListItemIcon>
@@ -221,18 +227,47 @@ export default function Sidebar({
                 <ListItemText primary="Add Path" />
               </ListItemButton>
             </ListItem>
+          </List>
+
+          <Box sx={{ minHeight: 0, overflowY: "auto" }}>
+            <List sx={{ pt: 0 }}>
             {paths.map((p, i) => (
               <ListItem key={p.id || p._id || i} disablePadding>
                 <ListItemButton
-                  onClick={() =>
-                    router.push(`/admin/paths/${p.id || p._id || encodeURIComponent(p.name || p.path || String(i))}`)
+                  selected={
+                    String(index) === String(p.path ?? p.name ?? p.label ?? "")
                   }
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "action.selected",
+                      borderLeft: 3,
+                      borderColor: "primary.main",
+                    },
+                    "&.Mui-selected:hover": {
+                      backgroundColor: "action.selected",
+                    },
+                  }}
+                  onClick={() => {
+                    const rawPath = p.path ?? p.name ?? p.label ?? p._id ?? p.id ?? String(i);
+                    const pathName = p.name ?? p.label ?? rawPath;
+                    router.push(`/admin/${encodeURIComponent(String(pathName))}?path=${encodeURIComponent(String(rawPath))}`);
+                  }}
                 >
-                  <ListItemText primary={p.name || p.path || p.label || p._id || p.id || `Path ${i + 1}`} />
+                  <ListItemIcon><FolderOutlined/></ListItemIcon>
+                  <ListItemText
+                    primary={p.name || p.path || p.label || p._id || p.id || `Path ${i + 1}`}
+                    slotProps={{
+                      primary: {
+                        noWrap: true,
+                        sx: { fontSize: "0.875rem" },
+                      },
+                    }}
+                  />
                 </ListItemButton>
               </ListItem>
             ))}
-          </List>
+            </List>
+          </Box>
         </Drawer>
       </Box>
     </>
