@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import { useAppContext } from "@/context/AppContext";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export default function CreateUserPage() {
   const { request } = useAppContext();

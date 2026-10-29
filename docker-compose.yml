@@ -27,7 +27,9 @@ services:
       dockerfile: Dockerfile
     container_name: mizore-backend
     volumes:
-      - /home/yuki:/home/yuki
+      - type: bind
+        source: ${folder:-D:/}
+        target: /files
     environment:
       HOST: 0.0.0.0
       PORT: ${BACKEND_PORT}
@@ -36,7 +38,7 @@ services:
       DB_HOST: postgres
       DB_NAME: ${DB_NAME:-mizore}
       DB_PORT: ${DB_PORT}
-      SHARED_FOLDER: ${SHARED_FOLDER:-/files}
+      SHARED_FOLDER: /files
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
     ports:
@@ -51,9 +53,11 @@ services:
     build:
       context: ./nextjs
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: mizore-frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       DB_URL: 
     ports:
       - "3000:3000"

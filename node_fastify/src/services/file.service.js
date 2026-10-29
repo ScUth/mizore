@@ -2,11 +2,20 @@ import fs from 'fs/promises'
 import path from 'path'
 import config from '../config/storage.js'
 
-export async function listFiles(file) {
-    return fs.readdir(path.join(config.sharedFolder, file))
+const root = path.resolve(config.sharedFolder)
+
+function resolveSafe(subPath = '') {
+    const target = path.resolve(root, subPath)
+    if (target !== root && !target.startsWith(root + path.sep)) {
+        throw new Error('Invalid path')
+    }
+    return target
 }
 
-export function getFilePath(filename) {
-    const safeName = path.basename(filename)
-    return path.join(config.sharedFolder, safeName)
+export async function listFiles(subPath = '') {
+    return fs.readdir(resolveSafe(subPath))
+}
+
+export function getFilePath(subPath) {
+    return resolveSafe(subPath)
 }

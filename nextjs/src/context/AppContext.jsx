@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const STORAGE_KEYS = {
   accessToken: "accessToken",
   refreshToken: "refreshToken",

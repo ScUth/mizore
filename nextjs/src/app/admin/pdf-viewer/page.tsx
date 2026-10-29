@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
 import AdminGuard from "../components/adminGuard";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 function PdfViewerContent() {
   const searchParams = useSearchParams();

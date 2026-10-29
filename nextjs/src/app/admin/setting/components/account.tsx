@@ -49,7 +49,7 @@ type SortField = "id" | "username" | "role" | "created_at";
 type SortDirection = "asc" | "desc";
 
 // Prefer an env var so this isn't hardcoded to one machine's LAN IP.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 function getAuthHeaders(
   token: string,

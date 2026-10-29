@@ -4,7 +4,8 @@
 - NextJS (MUI, React)
 - Docker
 - PostgresSQL
-## Installation (Backend)
+## Linux Installation 
+### Backend
 1. Go to the backend folder
 ```bash
 cd node_fastify
@@ -33,7 +34,7 @@ docker compose build
 docker compose up -d
 ```
 
-## Installation (Frontend)
+## Frontend
 2. Go to the frontend folder
 ```bash
 cd nextjs
@@ -53,6 +54,12 @@ pnpm dev
 # or
 bun dev
 ```
+
+## Windows Installation
+> [!note]
+> 
+### Backend
+### Frontend
 
 ## Note (For DEV)
 - In this app must have maximum of one **Owner**.
