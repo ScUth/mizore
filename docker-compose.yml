@@ -27,7 +27,11 @@ services:
       dockerfile: Dockerfile
     container_name: mizore-backend
     volumes:
-      - /home/yuki:/home/yuki
+      - type: bind
+        source: /home/yuki
+        target: /home/yuki
+        bind:
+          create_host_path: false
     environment:
       HOST: 0.0.0.0
       PORT: ${BACKEND_PORT}
