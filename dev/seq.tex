@@ -1,0 +1,146 @@
+\documentclass[10pt]{article}
+\usepackage[landscape,margin=0.6in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{tikz}
+\usepackage{hyperref}
+
+\pagestyle{empty}
+
+% Horizontal positions of the four lifelines (cm)
+\def\xB{0}\def\xA{7}\def\xD{14}\def\xS{21}
+
+\tikzset{
+  participant/.style={draw, rounded corners, fill=blue!7,
+    minimum width=3.1cm, minimum height=0.8cm, align=center, font=\small},
+  lifeline/.style={draw, dashed, gray},
+  call/.style={->, thick},
+  reply/.style={->, thick, dashed},
+  label/.style={font=\scriptsize, align=center, fill=white, inner sep=2pt},
+  phase/.style={font=\small\bfseries, fill=blue!10, rounded corners,
+    minimum width=24.1cm, minimum height=0.55cm, align=left, inner xsep=6pt,
+    anchor=west},
+  note/.style={draw, rounded corners, fill=yellow!15, font=\scriptsize,
+    align=center, inner sep=3pt}
+}
+
+% \header{lifeline length}
+\newcommand{\header}[1]{%
+  \node[participant] (browser) at (\xB,0) {User / Browser\\Next.js client};
+  \node[participant] (api) at (\xA,0) {Fastify API};
+  \node[participant] (db) at (\xD,0) {PostgreSQL};
+  \node[participant] (storage) at (\xS,0) {Shared directory\\(container filesystem)};
+  \foreach \x in {\xB,\xA,\xD,\xS}
+    \draw[lifeline] (\x,-0.5) -- (\x,-#1);
+}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PAGE 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{center}
+  {\Large\bfseries Mizore: current application sequence}\\[2pt]
+  {\small Main user journey: sign in, load saved paths, add a path, and browse files}
+\end{center}
+\vspace{-1mm}
+
+\begin{center}
+\begin{tikzpicture}
+\header{15.9}
+
+% 1. Sign in
+\node[phase] at (-1.55,-1.1) {1. Sign in};
+\draw[call] (\xB,-2.3) -- (\xA,-2.3)
+  node[midway,label] {POST /api/login\\username + password};
+\draw[call] (\xA,-3.4) -- (\xD,-3.4)
+  node[midway,label] {Find user by username};
+\draw[reply] (\xD,-4.3) -- (\xA,-4.3)
+  node[midway,label] {User row, including password hash};
+\node[note,text width=12.5cm] at (\xA,-5.3)
+  {Backend compares the password hash, then signs access and refresh JWTs.};
+\draw[reply] (\xA,-6.4) -- (\xB,-6.4)
+  node[midway,label] {User + access token + refresh token\\(or an error)};
+\node[note,text width=9cm] at (\xB+3.5,-7.5)
+  {Browser stores both tokens and user data in localStorage.};
+
+% 2. Verify session and load saved paths
+\node[phase] at (-1.55,-8.6) {2. Verify session and load saved paths};
+\draw[call] (\xB,-9.8) -- (\xA,-9.8)
+  node[midway,label] {GET /api/me\\Authorization header: access token};
+\node[note,text width=13.5cm] at (\xA,-10.9)
+  {API verifies the JWT and returns its user claims; this endpoint does not query PostgreSQL.};
+\draw[reply] (\xA,-11.8) -- (\xB,-11.8)
+  node[midway,label] {User claims (id, username, role)};
+\draw[call] (\xB,-12.9) -- (\xA,-12.9)
+  node[midway,label] {GET /api/paths/:userId\\with access token};
+\draw[call] (\xA,-14.0) -- (\xD,-14.0)
+  node[midway,label] {Authenticate; select paths by user id};
+\draw[reply] (\xD,-14.9) -- (\xA,-14.9)
+  node[midway,label] {Saved path records};
+\draw[reply] (\xA,-15.8) -- (\xB,-15.8)
+  node[midway,label] {Path list displayed in the UI};
+\end{tikzpicture}
+\end{center}
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PAGE 2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{center}
+  {\large\bfseries Mizore: current application sequence (continued)}
+\end{center}
+\vspace{-1mm}
+
+\begin{center}
+\begin{tikzpicture}[yscale=0.88]
+\header{17.6}
+
+% 3. Add a path
+\node[phase] at (-1.55,-1.1) {3. Add a path};
+\draw[call] (\xB,-2.3) -- (\xA,-2.3)
+  node[midway,label] {POST /api/paths\\name, path, user id, allowedSubpath};
+\node[note,text width=13cm] at (\xA,-3.4)
+  {API authenticates the token and resolves the submitted path beneath SHARED\_FOLDER.};
+\draw[call] (\xA,-4.4) -- (\xS,-4.4)
+  node[pos=0.6,label] {stat(resolved path)};
+\draw[reply] (\xS,-5.4) -- (\xA,-5.4)
+  node[pos=0.6,label] {Directory exists (otherwise API returns 400)};
+\draw[call] (\xA,-6.4) -- (\xD,-6.4)
+  node[midway,label] {Insert path record};
+\draw[reply] (\xD,-7.3) -- (\xA,-7.3)
+  node[midway,label] {Created path record};
+\draw[reply] (\xA,-8.3) -- (\xB,-8.3)
+  node[midway,label] {201 response;\\UI adds the path to local state};
+
+% 4. Browse a folder and fetch a file
+\node[phase] at (-1.55,-9.5) {4. Browse a folder and fetch a file};
+\draw[call] (\xB,-10.7) -- (\xA,-10.7)
+  node[midway,label] {GET /api/list/:folder\\(client sends bearer token)};
+\draw[call] (\xA,-11.8) -- (\xS,-11.8)
+  node[pos=0.6,label] {readdir(SHARED\_FOLDER + folder)};
+\draw[reply] (\xS,-12.8) -- (\xA,-12.8)
+  node[pos=0.6,label] {Directory entry names};
+\draw[reply] (\xA,-13.8) -- (\xB,-13.8)
+  node[midway,label] {Folder contents shown in the UI};
+\draw[call] (\xB,-15.0) -- (\xA,-15.0)
+  node[midway,label] {GET /api/files/:filename\\(client sends bearer token)};
+\draw[call] (\xA,-16.1) -- (\xS,-16.1)
+  node[pos=0.6,label] {Fastify static plugin reads file\\under SHARED\_FOLDER};
+\draw[reply] (\xS,-17.3) -- (\xB,-17.3)
+  node[pos=0.25,label] {File bytes returned to browser for display};
+\end{tikzpicture}
+\end{center}
+
+\newpage
+\section*{How to read the diagram}
+\noindent\textbf{Important details from the current code:}
+\begin{itemize}
+  \setlength\itemsep{0pt}
+  \item \texttt{SHARED\_FOLDER} is the backend's filesystem root for path checks, directory listings, and static file serving. A saved path is a database record, not a separate mount.
+  \item In the checked-in Compose file, the bind mount target is \texttt{/home/yuki}, while \texttt{SHARED\_FOLDER} defaults to \texttt{/files}. Unless the runtime environment changes one of these, they do not refer to the same container directory.
+  \item The browser's shared-folder listing and file requests include the access token, but the current \texttt{/api/list/:file} and \texttt{/api/files/:filename} routes do not install authentication middleware. Path creation and retrieval do require authentication.
+  \item The admin UI is gated to users with the \texttt{admin} or \texttt{owner} role. The shared-path list can also be requested twice: the sidebar fetches it after \texttt{/api/me}, while AppContext independently refreshes paths after session setup.
+  \item Refresh tokens are stored, but this flow does not refresh an expired access token; an invalid token makes protected requests fail.
+\end{itemize}
+
+\end{document}

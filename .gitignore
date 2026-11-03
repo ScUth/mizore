@@ -1,1 +1,4 @@
 .env
+/dev/seq.log
+/dev/seq.out
+/dev/seq.aux

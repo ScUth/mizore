@@ -32,6 +32,11 @@ services:
         target: /home/yuki
         bind:
           create_host_path: false
+      # - type: bind
+      #   source: /
+      #   target: /
+      #   bind:
+      #     create_host_path: false
     environment:
       HOST: 0.0.0.0
       PORT: ${BACKEND_PORT}
