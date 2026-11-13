@@ -6,7 +6,7 @@
 \usetikzlibrary{arrows.meta,positioning,fit}
 \usepackage{tabularx}
 \usepackage{array}
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
 \usepackage{hyperref}
 
 \pagestyle{plain}
@@ -33,8 +33,22 @@
   edge/.style={-{Stealth[length=2mm]}, thick},
   boundary/.style={draw=gray!70, dashed, rounded corners, inner sep=12pt},
   layer/.style={draw=mizoreblue, rounded corners, fill=lightblue,
-    minimum width=3.2cm, minimum height=0.9cm, align=center, font=\small}
+    minimum width=3.2cm, minimum height=0.9cm, align=center, font=\small},
+  entity/.style={draw=mizoreblue, line width=0.8pt, fill=white, inner sep=0pt,
+    font=\small},
+  rel/.style={thick, draw=mizoreblue},
+  card/.style={font=\scriptsize, fill=white, inner sep=1.5pt}
 }
+
+% Entity box: #1 = table name, #2 = tabular rows (key & column & type \\)
+\newcommand{\erentity}[2]{%
+  \begin{tabular}{@{\hspace{4pt}}l@{\hspace{6pt}}l@{\hspace{10pt}}l@{\hspace{4pt}}}
+    \multicolumn{3}{@{}c@{}}{\cellcolor{lightblue}\rule{0pt}{12pt}\textbf{\texttt{#1}}} \\[2pt]
+    \hline
+    \rule{0pt}{11pt}#2
+  \end{tabular}}
+\newcommand{\pk}{\textbf{\scriptsize PK}}
+\newcommand{\fk}{\textit{\scriptsize FK}}
 
 \begin{document}
 
@@ -213,6 +227,44 @@ the backend waits for the database health check. The backend image starts
 The backend's file root is intended to be supplied through \texttt{SHARED\_FOLDER}.
 
 \subsection{Data view}
+The PostgreSQL schema defined in \texttt{postgres/init.sql} (with
+\texttt{migrations/001\_add\_allowed\_subpath.sql}) contains three tables. Both
+\texttt{paths} and \texttt{subUsers} reference \texttt{users.id}; there are no relationships
+between \texttt{paths} and \texttt{subUsers}. File contents are not part of the schema.
+
+\begin{center}
+\begin{tikzpicture}
+  \node[entity] (users) at (0,0) {\erentity{users}{%
+    \pk & \texttt{id} & \texttt{serial} \\
+        & \texttt{username} & \texttt{varchar(255)} NN \\
+        & \texttt{password} & \texttt{varchar(60)} NN \\
+        & \texttt{role} & \texttt{varchar(255)} NN, def.\ \texttt{'owner'} \\
+        & \texttt{created\_at} & \texttt{timestamptz} NN, def.\ \texttt{now()} \\}};
+
+  \node[entity] (paths) at (-9,0) {\erentity{paths}{%
+    \pk & \texttt{id} & \texttt{serial} \\
+        & \texttt{name} & \texttt{varchar(255)} NN \\
+        & \texttt{path} & \texttt{text} NN \\
+    \fk & \texttt{user\_id} & \texttt{serial} $\rightarrow$ \texttt{users.id} \\
+        & \texttt{allowed\_subpath} & \texttt{boolean} NN, def.\ \texttt{true} \\}};
+
+  \node[entity] (subusers) at (9,0) {\erentity{subUsers}{%
+    \pk & \texttt{id} & \texttt{serial} \\
+        & \texttt{name} & \texttt{varchar(255)} NN \\
+    \fk & \texttt{user\_id} & \texttt{serial} $\rightarrow$ \texttt{users.id} \\
+        & \texttt{role} & \texttt{varchar(255)} NN \\
+        & \texttt{created\_at} & \texttt{timestamp} NN, def.\ \texttt{now()} \\}};
+
+  \draw[rel] (users.west) -- node[above,font=\scriptsize]{owns}
+    node[pos=0.1,below,card]{1} node[pos=0.9,below,card]{0..*} (paths.east);
+  \draw[rel] (users.east) -- node[above,font=\scriptsize]{has}
+    node[pos=0.1,below,card]{1} node[pos=0.9,below,card]{0..*} (subusers.west);
+\end{tikzpicture}
+
+{\scriptsize PK = primary key; FK = foreign key; NN = \texttt{NOT NULL}; def.\ = default.
+Cardinality: one user to zero or more rows.}
+\end{center}
+
 \begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{3.8cm}
                               >{\raggedright\arraybackslash}X
                               >{\raggedright\arraybackslash}X}
@@ -305,7 +357,12 @@ No centralized monitoring, backup policy, or formal availability target is speci
   browser may send an access token.
   \item \textbf{Refresh behavior:} the client stores a refresh token, but the current route set
   does not expose a refresh endpoint.
-  \item \textbf{Path update validation:} path creation checks containment and directory
+  \item \textbf{\texttt{subUsers} schema mismatch:} \texttt{subUser.model.js} inserts a
+  \texttt{password} column that \texttt{postgres/init.sql} does not define, so sub-user creation
+  fails against the initialized schema. In addition, the \texttt{user\_id} foreign keys in
+  \texttt{paths} and \texttt{subUsers} are declared as \texttt{serial}, which attaches an
+  unintended sequence default; \texttt{integer} is the usual type for a foreign key.
+\item \textbf{Path update validation:} path creation checks containment and directory
   existence; the update operation currently writes path metadata without performing those same
   checks.
 \end{itemize}
