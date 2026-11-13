@@ -27,6 +27,8 @@ const STORAGE_KEYS = {
  * @property {boolean} isLoading
  * @property {AppPath[]} paths
  * @property {import("react").Dispatch<import("react").SetStateAction<AppPath[]>>} setPaths
+ * @property {string[]} roots
+ * @property {import("react").Dispatch<import("react").SetStateAction<string[]>>} setRoots
  * @property {boolean} pathsLoading
  * @property {string} pathsError
  * @property {string} currentPath
@@ -69,6 +71,7 @@ export function AppProvider({ children }) {
   const [refreshToken, setRefreshToken] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [paths, setPaths] = useState([]);
+  const [roots, setRoots] = useState([]);
   const [pathsLoading, setPathsLoading] = useState(false);
   const [pathsError, setPathsError] = useState("");
   const [currentPath, setCurrentPath] = useState("");
@@ -84,6 +87,7 @@ export function AppProvider({ children }) {
     setAccessToken("");
     setRefreshToken("");
     setPaths([]);
+    setRoots([]);
     setPathsLoading(false);
     setPathsError("");
     setCurrentPath("");
@@ -212,6 +216,7 @@ export function AppProvider({ children }) {
       const data = await response.json();
       const nextPaths = data?.paths ?? (Array.isArray(data) ? data : []);
       setPaths(nextPaths);
+      if (Array.isArray(data?.roots)) setRoots(data.roots);
       return nextPaths;
     } catch (error) {
       console.error("Failed to load paths", error);
@@ -273,6 +278,8 @@ export function AppProvider({ children }) {
       isLoading,
       paths,
       setPaths,
+      roots,
+      setRoots,
       pathsLoading,
       pathsError,
       currentPath,
@@ -296,6 +303,7 @@ export function AppProvider({ children }) {
       logout,
       paths,
       pathsError,
+      roots,
       pathsLoading,
       refreshPaths,
       refreshToken,

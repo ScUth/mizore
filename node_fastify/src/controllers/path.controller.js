@@ -1,4 +1,5 @@
 import * as pathService from '../services/path.service.js'
+import config from '../config/storage.js'
 
 export async function createPath(request, reply) {
     const { name, path, user_id, allowed_subpath } = request.body ?? {}
@@ -36,7 +37,8 @@ export async function getAllPathsByUserId(request, reply) {
 
     try {
         const paths = await pathService.getAllPathsByUserId(userId);
-        reply.send({ paths });
+        // roots = mounted shared folders, so the UI can group paths per mount.
+        reply.send({ paths, roots: config.sharedFolders });
     } catch (error) {
         request.log.error(error);
         reply.status(500).send({ error: 'Failed to retrieve paths' });

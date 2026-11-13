@@ -2,7 +2,7 @@ import * as React from "react";
 import { useAppContext } from "@/context/AppContext";
 
 export function useLoadUserAndPaths() {
-  const { accessToken, request, setUser, setPaths } = useAppContext();
+  const { accessToken, request, setUser, setPaths, setRoots } = useAppContext();
 
   React.useEffect(() => {
     const load = async () => {
@@ -37,6 +37,7 @@ export function useLoadUserAndPaths() {
           if (pResp.ok) {
             const pData = await pResp.json();
             setPaths(pData?.paths || (Array.isArray(pData) ? pData : []));
+            if (Array.isArray(pData?.roots)) setRoots(pData.roots);
           } else {
             setPaths([]);
           }
@@ -51,5 +52,5 @@ export function useLoadUserAndPaths() {
     };
 
     void load();
-  }, [accessToken, request, setPaths, setUser]);
+  }, [accessToken, request, setPaths, setRoots, setUser]);
 }

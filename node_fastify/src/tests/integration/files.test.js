@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { after, test } from 'node:test'
+import { generateAccessToken } from '../../utils/jwt.js'
 import { app, closeTestApp, secondSharedFolder, sharedFolder } from './setup.js'
 
 after(closeTestApp)
@@ -95,4 +96,22 @@ test('downloading a file rejects paths outside every configured root', async () 
 
     // "/etc/passwd" is not under a root, so it is treated as relative to the first root.
     assert.equal(response.statusCode, 404)
+})
+
+test('listing sources rejects a request without a token', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/sources' })
+
+    assert.equal(response.statusCode, 401)
+})
+
+test('listing sources returns every configured root', async () => {
+    const token = generateAccessToken({ id: 1, username: 'member', role: 'user' })
+    const response = await app.inject({
+        method: 'GET',
+        url: '/api/sources',
+        headers: { authorization: `Bearer ${token}` },
+    })
+
+    assert.equal(response.statusCode, 200)
+    assert.deepEqual(response.json(), { sources: [sharedFolder, secondSharedFolder] })
 })

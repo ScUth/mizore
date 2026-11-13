@@ -1,4 +1,5 @@
 import * as fileService from '../services/file.service.js'
+import config from '../config/storage.js'
 
 const BAD_PATH_ERRORS = ['Path is required', 'Path is outside the shared folder']
 
@@ -34,4 +35,8 @@ export async function listFiles(request, reply) {
     } catch (error) {
         return sendPathError(request, reply, error, 'Failed to list files')
     }
+}
+
+export async function listSources(request, reply) {
+    reply.send({ sources: config.sharedFolders })
 }

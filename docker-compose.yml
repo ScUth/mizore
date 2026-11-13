@@ -28,16 +28,16 @@ services:
     container_name: mizore-backend
     volumes:
       - type: bind
-        source: /home/yuki
-        target: /home/yuki
+        source: /home/yuki/sdb931/Documents
+        target: /home/yuki/sdb931/Documents
         bind:
           create_host_path: false
       # Add more folders the same way: keep target == source so the paths
       # saved in the database match the host paths, then list every target
       # in SHARED_FOLDERS (comma-separated), e.g. SHARED_FOLDERS=/home/yuki,/mnt/data
       - type: bind
-        source: /etc
-        target: /etc
+        source: /home/yuki/sdb931/Anime (DL)
+        target: /home/yuki/sdb931/Anime (DL)
         bind:
           create_host_path: false
     environment:

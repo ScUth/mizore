@@ -25,7 +25,7 @@ export default function Sidebar({
   index: string;
 }) {
   const router = useRouter();
-  const { paths, pathsLoading, pathsError, upsertPath } = useAppContext();
+  const { paths, roots, pathsLoading, pathsError, upsertPath } = useAppContext();
 
   useLoadUserAndPaths();
 
@@ -82,6 +82,7 @@ export default function Sidebar({
 
           <PathList
             paths={paths}
+            roots={roots}
             loading={pathsLoading}
             error={pathsError}
             index={index}

@@ -1,7 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Button, FormControlLabel, Switch, TextField } from "@mui/material";
+import {
+  Button,
+  FormControlLabel,
+  MenuItem,
+  Switch,
+  TextField,
+} from "@mui/material";
 import { useAppContext } from "@/context/AppContext";
 import CustomDialog from "./dialog";
 
@@ -12,6 +18,39 @@ type PathRecord = {
   path: string;
   allowed_subpath: boolean;
 };
+
+function trimSlashes(value: string) {
+  return value.replace(/^[/\\]+|[/\\]+$/g, "");
+}
+
+function joinSourcePath(source: string, relativePath: string) {
+  const rest = trimSlashes(relativePath.trim());
+  if (!source) return relativePath.trim();
+  const base = source.replace(/\/+$/, "") || "/";
+  if (!rest) return base;
+  return base === "/" ? `/${rest}` : `${base}/${rest}`;
+}
+
+// Split a saved path into the source (mounted root) it lives under and the
+// rest of the path. Old rows saved relative to the first root fall back to it.
+function splitSourcePath(fullPath: string, sources: string[]) {
+  const normalized = `/${trimSlashes(fullPath.trim())}`;
+  const match = [...sources]
+    .sort((a, b) => b.length - a.length)
+    .find(
+      (source) =>
+        source === "/" ||
+        normalized === source ||
+        normalized.startsWith(`${source}/`),
+    );
+  if (match) {
+    return {
+      source: match,
+      relativePath: trimSlashes(normalized.slice(match.length)),
+    };
+  }
+  return { source: sources[0] ?? "", relativePath: trimSlashes(fullPath) };
+}
 
 export default function AddPathDialog({
   open,
@@ -29,6 +68,9 @@ export default function AddPathDialog({
   const [pathName, setPathName] = React.useState("");
   const [allowedSubpath, setAllowedSubpath] = React.useState(true);
   const [errorMessage, setErrorMessage] = React.useState("");
+  const [sources, setSources] = React.useState<string[]>([]);
+  const [source, setSource] = React.useState("");
+  const [sourcesLoaded, setSourcesLoaded] = React.useState(false);
 
   const resetForm = React.useCallback(() => {
     setPath("");
@@ -38,12 +80,58 @@ export default function AddPathDialog({
   }, []);
 
   React.useEffect(() => {
+    if (!open || !accessToken) return;
+
+    let cancelled = false;
+    setSourcesLoaded(false);
+    const loadSources = async () => {
+      try {
+        const response = await request("/api/sources");
+        if (!response.ok) {
+          throw new Error(`Failed to load sources (${response.status})`);
+        }
+        const data = await response.json();
+        if (!cancelled) {
+          setSources(
+            Array.isArray(data?.sources)
+              ? data.sources.filter((item: unknown) => typeof item === "string")
+              : [],
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load mounted sources", error);
+        if (!cancelled) setSources([]);
+      } finally {
+        if (!cancelled) setSourcesLoaded(true);
+      }
+    };
+
+    void loadSources();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, accessToken, request]);
+
+  // Once sources are known, pick the source for the path being edited
+  // (or the first source for a new path) and show only the part inside it.
+  React.useEffect(() => {
+    if (!open || !sourcesLoaded) return;
+    if (sources.length === 0) {
+      setSource("");
+      setPath(pathToEdit?.path ?? "");
+      return;
+    }
+    const split = splitSourcePath(pathToEdit?.path ?? "", sources);
+    setSource(split.source);
+    setPath(split.relativePath);
+  }, [open, sourcesLoaded, sources, pathToEdit]);
+
+  React.useEffect(() => {
     if (!open) {
       resetForm();
       return;
     }
 
-    setPath(pathToEdit?.path ?? "");
     setPathName(pathToEdit?.name ?? "");
     setAllowedSubpath(pathToEdit?.allowed_subpath !== false);
     setErrorMessage("");
@@ -58,7 +146,7 @@ export default function AddPathDialog({
     event.preventDefault();
     setErrorMessage("");
 
-    const trimmedPath = path.trim();
+    const trimmedPath = joinSourcePath(source, path);
     const trimmedName = pathName.trim();
     const userId = user?.id;
 
@@ -159,15 +247,38 @@ export default function AddPathDialog({
         </>
       }
     >
+      {sources.length > 0 && (
+        <TextField
+          select
+          fullWidth
+          label="Source"
+          value={source}
+          onChange={(event) => setSource(event.target.value)}
+          margin="normal"
+          required
+          helperText="Mounted folder this path lives under"
+        >
+          {sources.map((item) => (
+            <MenuItem key={item} value={item}>
+              {item}
+            </MenuItem>
+          ))}
+        </TextField>
+      )}
       <TextField
         autoFocus
         fullWidth
-        label="Path"
-        placeholder="e.g. /api/users or C:\\Projects\\MyPath"
+        label={sources.length > 0 ? "Folder inside source" : "Path"}
+        placeholder={sources.length > 0 ? "e.g. Documents/Work" : "e.g. /home/user/Documents"}
         value={path}
         onChange={(event) => setPath(event.target.value)}
         margin="normal"
-        required
+        required={sources.length === 0}
+        helperText={
+          sources.length > 0
+            ? `Saved as ${joinSourcePath(source, path)}`
+            : undefined
+        }
       />
       <TextField
         fullWidth
