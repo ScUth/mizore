@@ -1,0 +1,331 @@
+\documentclass[10pt]{article}
+\usepackage[landscape,margin=0.65in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\pagestyle{plain}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\definecolor{mizoreblue}{HTML}{245B9E}
+\definecolor{lightblue}{HTML}{EAF2FB}
+\definecolor{lightgray}{HTML}{F1F3F5}
+\definecolor{riskcolor}{HTML}{FFF4DC}
+
+\tikzset{
+  component/.style={draw=mizoreblue, rounded corners, fill=lightblue,
+    line width=0.8pt, minimum width=3.7cm, minimum height=1.15cm,
+    align=center, font=\small},
+  store/.style={draw=gray!75, rounded corners, fill=lightgray,
+    line width=0.8pt, minimum width=3.7cm, minimum height=1.15cm,
+    align=center, font=\small},
+  actor/.style={draw=gray!75, rounded corners, fill=white,
+    line width=0.8pt, minimum width=3.3cm, minimum height=1.15cm,
+    align=center, font=\small},
+  edge/.style={-{Stealth[length=2mm]}, thick},
+  boundary/.style={draw=gray!70, dashed, rounded corners, inner sep=12pt},
+  layer/.style={draw=mizoreblue, rounded corners, fill=lightblue,
+    minimum width=3.2cm, minimum height=0.9cm, align=center, font=\small}
+}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries Mizore}\\[2pt]
+  {\Large Software Architecture Document}\\[4pt]
+  {\small Architecture description of the current repository implementation}
+\end{center}
+
+\begin{center}
+\begin{tabularx}{0.82\linewidth}{>{\bfseries}p{3.2cm}X
+                                 >{\bfseries}p{2.6cm}X}
+Document status & Draft & Version & 1.0 \\
+System & Mizore & Source basis & Current checked-in code \\
+\end{tabularx}
+\end{center}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+\subsection{Purpose}
+This document describes Mizore's architecture: its system boundary, runtime components,
+responsibility allocation, data stores, interfaces, deployment shape, and notable constraints.
+It is a description of the current implementation, not a feature specification or a proposal
+for an unimplemented target architecture.
+
+\subsection{Scope}
+Mizore is a browser-based shared-file navigator. Users sign in, manage saved directory paths,
+and browse or open files exposed by the backend. The architecture in scope includes the Next.js
+frontend, Fastify API, PostgreSQL database, and shared filesystem used by the backend.
+
+\subsection{Audience}
+This document is intended for developers, maintainers, and operators who need to locate
+responsibilities, understand service interactions, or assess the impact of a change.
+
+\subsection{Conventions}
+The architecture views are implementation-oriented. Solid arrows indicate runtime requests or
+data access. A dashed boundary indicates services grouped by Docker Compose. Statements marked
+as current behavior describe the checked-in code and may include known gaps.
+
+\section{Architecture Drivers}
+
+\subsection{Stakeholders and concerns}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash\bfseries}p{4cm}X}
+Stakeholder & Primary architecture concern \\
+\hline
+Browser user & Sign in, access saved paths, and browse files through the web UI. \\
+Owner or admin & Manage users and perform administrative operations. \\
+Developer or maintainer & Change UI, API, persistence, or file handling without crossing layer boundaries accidentally. \\
+Operator & Configure service ports, database connection, JWT secrets, and shared storage for deployment. \\
+\end{tabularx}
+
+\subsection{Key use cases}
+\begin{enumerate}
+  \item Authenticate with username and password and restore a client session.
+  \item Retrieve, create, update, and delete a user's saved paths.
+  \item List a directory and retrieve a file from the configured shared filesystem.
+  \item Perform user-administration operations subject to the configured role checks.
+\end{enumerate}
+
+\subsection{Constraints and assumptions}
+\begin{itemize}
+  \item The frontend and backend are separate services; browser API requests use
+  \texttt{NEXT\_PUBLIC\_API\_URL}.
+  \item PostgreSQL stores application records. File contents remain on the shared filesystem.
+  \item The checked-in deployment uses Docker Compose, PostgreSQL 16, and Node.js 20 images.
+  \item No formal service-level objectives, capacity targets, or availability targets are stated
+  in the repository documentation.
+\end{itemize}
+
+\section{System Context and Container View}
+
+Mizore is used through a browser. The browser obtains the UI from Next.js and sends API requests
+to Fastify. Fastify reads and writes PostgreSQL records and accesses files beneath its configured
+shared-folder root. The database and shared filesystem are resources used by the application;
+neither is a separate user-facing service.
+
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \node[actor] (browser) at (0,0) {\textbf{User / browser}\\Owner, admin, or user};
+  \node[component] (web) at (5,0) {\textbf{Next.js frontend}\\React 19, MUI\\port 3000};
+  \node[component] (api) at (10,0) {\textbf{Fastify backend}\\Node.js REST API\\port from \texttt{PORT}};
+  \node[store] (db) at (15.3,0) {\textbf{PostgreSQL 16}\\users, paths, subusers};
+  \node[store] (files) at (20.3,0) {\textbf{Shared filesystem}\\configured by \texttt{SHARED\_FOLDER}};
+
+  \draw[edge] ([yshift=5pt]browser.east) -- node[above,font=\scriptsize,align=center]
+    {pages and UI} ([yshift=5pt]web.west);
+  \draw[edge] ([yshift=-5pt]browser.east) to[bend right=10]
+    node[below,font=\scriptsize,align=center]
+    {REST calls; bearer access token} ([yshift=-5pt]api.west);
+  \draw[edge] (api.east) -- node[above,font=\scriptsize,align=center]
+    {SQL via \texttt{pg}} (db.west);
+  \draw[edge] (api.south east) to[bend right=18]
+    node[below,font=\scriptsize,align=center]
+    {path checks; list / serve files} (files.south west);
+
+  \node[boundary,fit=(web)(api)(db),label={[font=\small]above:Docker Compose services}]
+    (compose) {};
+\end{tikzpicture}
+\end{center}
+
+\section{Architecture Views}
+
+\subsection{Logical and component view}
+The backend follows a route--controller--service--model organization. Route modules map HTTP
+paths and attach pre-handlers; controllers translate requests and responses; services implement
+operations; models issue parameterized SQL queries. Authentication is implemented in
+\texttt{auth.controller.js} and is attached to routes that require it. The frontend separates
+pages, reusable components, and shared client state.
+
+\begin{center}
+\begin{tikzpicture}[node distance=0.55cm and 0.6cm]
+  \node[layer] (routes) {\texttt{routes/}\\HTTP routes and pre-handlers};
+  \node[layer,right=of routes] (controllers) {\texttt{controllers/}\\request / response};
+  \node[layer,right=of controllers] (services) {\texttt{services/}\\path, user, file rules};
+  \node[layer,right=of services] (models) {\texttt{models/}\\SQL-backed data access};
+  \node[store,right=of models] (postgres) {PostgreSQL};
+
+  \draw[edge] (routes) -- (controllers);
+  \draw[edge] (controllers) -- (services);
+  \draw[edge] (services) -- (models);
+  \draw[edge] (models) -- (postgres);
+
+  \node[layer,below=1.05cm of controllers] (config) {\texttt{config/}\\database and storage settings};
+  \node[store,right=of config] (filesystem) {Shared filesystem};
+  \draw[edge] (config) -- (filesystem);
+  \draw[edge] (services.south) -- ++(0,-0.48) -| (filesystem.north);
+
+  \node[layer,above=1.05cm of controllers] (auth) {\texttt{auth.controller.js}\\JWT authentication};
+  \draw[edge] (auth) -- (routes);
+\end{tikzpicture}
+\end{center}
+
+\small
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{4.3cm}
+                              >{\raggedright\arraybackslash}X
+                              >{\raggedright\arraybackslash}X}
+\textbf{Component} & \textbf{Location and responsibility} & \textbf{Boundary} \\
+\hline
+Frontend pages & \texttt{nextjs/src/app/}; login, user creation, admin, settings, and file viewer. &
+UI and page composition; API calls are made from the browser. \\
+Frontend shared state & \texttt{nextjs/src/context/} and \texttt{components/}; session, path, current-folder state, and sidebar controls. &
+App context owns client-side authentication and path state. \\
+HTTP API & \texttt{node\_fastify/src/routes/} and \texttt{controllers/}; auth, user, path, and file endpoints. &
+Routes define middleware; controllers handle HTTP-level concerns. \\
+Application logic & \texttt{node\_fastify/src/services/}; path, user, and file operations. &
+Coordinates data access and filesystem operations. \\
+Persistence and configuration & \texttt{node\_fastify/src/models/} and \texttt{config/}. &
+Parameterized SQL, connection pool, and shared-folder root. \\
+Database schema & \texttt{postgres/init.sql} and \texttt{postgres/migrations/}. &
+Initialization applies to an empty volume; existing databases require migrations. \\
+\end{tabularx}
+\normalsize
+
+\subsection{Runtime view}
+\textbf{Authentication flow.} The browser posts credentials to \texttt{/api/login}. The API
+loads the user record, compares the password hash, and returns a user object and access/refresh
+JWTs. The client stores the tokens in local storage and sends the access token as a bearer token
+on authenticated requests. On session restoration, the client calls \texttt{/api/me}.
+
+\textbf{Saved-path flow.} The client calls the authenticated \texttt{/api/paths} endpoints.
+Path creation resolves the submitted relative directory beneath \texttt{SHARED\_FOLDER},
+checks that it exists and is a directory, then stores its metadata in PostgreSQL.
+
+\textbf{File-browsing flow.} The client requests directory entries through
+\texttt{/api/list/:file} and file content through \texttt{/api/files/:filename}. The backend
+uses the shared filesystem for these operations; file contents are not stored in PostgreSQL.
+
+\subsection{Deployment view}
+The Compose deployment contains frontend, backend, and PostgreSQL services. PostgreSQL uses
+the \texttt{postgres\_data} named volume and initializes from \texttt{postgres/init.sql};
+the backend waits for the database health check. The backend image starts
+\texttt{node server.js}; the frontend uses a multi-stage Next.js build and serves on port 3000.
+The backend's file root is intended to be supplied through \texttt{SHARED\_FOLDER}.
+
+\subsection{Data view}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{3.8cm}
+                              >{\raggedright\arraybackslash}X
+                              >{\raggedright\arraybackslash}X}
+\textbf{Store / entity} & \textbf{Data} & \textbf{Relationship / use} \\
+\hline
+\texttt{users} & ID, username, password hash, role, creation time. &
+Account records; roles include values used by route checks, such as \texttt{admin} and \texttt{owner}. \\
+\texttt{subUsers} & ID, name, role, parent user ID, creation time. &
+Subordinate records associated with a user. \\
+\texttt{paths} & ID, name, path, user ID, \texttt{allowed\_subpath}. &
+Saved directory metadata associated with a user. \\
+Shared filesystem & Directory entries and file bytes. &
+Read by the backend; root is configured separately from database records. \\
+\end{tabularx}
+
+\subsection{Interface view}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{4cm}
+                              >{\raggedright\arraybackslash}X
+                              >{\raggedright\arraybackslash}X}
+\textbf{Interface} & \textbf{Examples} & \textbf{Consumer / provider} \\
+\hline
+Browser--frontend & HTTP pages and client-side UI. &
+Browser consumes the Next.js frontend. \\
+Browser--API & \texttt{/api/login}, \texttt{/api/me}, \texttt{/api/paths}, \texttt{/api/list/:file}, \texttt{/api/files/:filename}. &
+Browser calls Fastify; \texttt{NEXT\_PUBLIC\_API\_URL} configures the API base URL. \\
+API--database & PostgreSQL protocol through the \texttt{pg} pool. &
+Fastify queries PostgreSQL using parameterized SQL. \\
+API--filesystem & Directory and file operations under \texttt{SHARED\_FOLDER}. &
+Fastify accesses the mounted shared directory. \\
+\end{tabularx}
+
+\section{Cross-Cutting Concerns}
+
+\subsection{Authentication and authorization}
+Access tokens are signed as JWTs with a one-hour expiry; refresh tokens have a seven-day
+expiry. Path and current-user routes install authentication checks. User-administration routes
+require \texttt{admin} or \texttt{owner}. Token verification is performed by the backend.
+
+\subsection{File-path boundary}
+Path creation resolves a submitted relative path beneath the configured shared root and
+verifies that it is an existing directory. Listing and static file serving are implemented
+through separate routes, so they must be assessed independently when changing filesystem
+behavior.
+
+\subsection{Persistence and migration}
+PostgreSQL schema initialization is performed by \texttt{postgres/init.sql} when the data
+volume is first created. The \texttt{allowed\_subpath} column is also represented by a migration
+for databases that already exist.
+
+\section{Architecture Decisions and Rationale}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash\bfseries}p{4.2cm}X}
+Decision reflected in code & Rationale or observed consequence \\
+\hline
+Separate frontend and API services & UI and API can be built and started independently; browser API access depends on a correct public API URL. \\
+PostgreSQL for application records & Relational user and saved-path data is kept separately from the contents being browsed. \\
+Shared filesystem for files & The application does not copy file contents into the database; the backend needs access to a configured shared root. \\
+Layered Fastify backend & Routes, controllers, services, and models have distinct HTTP, application, and persistence responsibilities. \\
+Bearer JWT session & The client can authenticate API requests without a server-side session store; tokens are currently stored in browser local storage. \\
+\end{tabularx}
+
+\section{Quality Attribute Assessment}
+The repository does not define measurable quality-attribute targets. The following table records
+the design mechanisms and the current evidence or limitation rather than claiming that a target
+has been met.
+
+\begin{tabularx}{\linewidth}{>{\bfseries}p{3.5cm}X X}
+Attribute & Current mechanism & Assessment / evidence \\
+\hline
+Security & Password hashing, bearer JWT authentication, role checks, path-root validation. &
+File-list and file-download routes do not attach authentication pre-handlers in the current route definitions. \\
+Data durability & PostgreSQL named volume. &
+Database data persists across container recreation; initialization scripts do not automatically migrate existing volumes. \\
+Modifiability & Layered backend and separate frontend/backend projects. &
+Responsibilities have defined locations; API and storage configuration remain deployment-sensitive. \\
+Operability & Fastify logging and PostgreSQL health check. &
+No centralized monitoring, backup policy, or formal availability target is specified in the repository. \\
+\end{tabularx}
+
+\section{Risks and Open Issues}
+\begin{itemize}
+  \setlength\itemsep{2pt}
+  \item \textbf{Frontend API URL:} the checked-in Compose value is
+  \texttt{http://localhost:3000}, while Fastify is a separate service on its configured port.
+  Configure a browser-reachable backend URL for the deployment.
+  \item \textbf{Shared-folder mount:} Compose mounts the host's \texttt{/home/yuki} at that
+  container path, while the backend defaults \texttt{SHARED\_FOLDER} to \texttt{/files}.
+  Unless runtime configuration changes, these paths do not refer to the same directory.
+  \item \textbf{File-route authorization:} \texttt{/api/list/:file} and
+  \texttt{/api/files/:filename} do not install authentication pre-handlers, even though the
+  browser may send an access token.
+  \item \textbf{Refresh behavior:} the client stores a refresh token, but the current route set
+  does not expose a refresh endpoint.
+  \item \textbf{Path update validation:} path creation checks containment and directory
+  existence; the update operation currently writes path metadata without performing those same
+  checks.
+\end{itemize}
+
+\section{Glossary}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{4cm}X}
+API & Application Programming Interface; in this system, the Fastify HTTP endpoints. \\
+JWT & JSON Web Token used by the API to authenticate bearer-token requests. \\
+Shared root & Filesystem directory configured for backend file operations through \texttt{SHARED\_FOLDER}. \\
+Saved path & A PostgreSQL record identifying a directory available to a user in the UI. \\
+\end{tabularx}
+
+\section{References}
+\begin{itemize}
+  \item \texttt{README.md} --- project overview and development instructions.
+  \item \texttt{DOCKER\_DEPLOYMENT.md} --- deployment configuration and migration notes.
+  \item \texttt{docker-compose.yml} --- checked-in service topology and mounts.
+  \item \texttt{node\_fastify/src/} --- API routes, controllers, services, models, and configuration.
+  \item \texttt{nextjs/src/} --- frontend pages, components, and client-side application state.
+  \item \texttt{postgres/init.sql} and \texttt{postgres/migrations/} --- database schema and migration.
+\end{itemize}
+
+\end{document}

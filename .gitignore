@@ -1,4 +1,5 @@
 .env
-/dev/seq.log
-/dev/seq.out
-/dev/seq.aux
+/dev/*.log
+/dev/*.out
+/dev/*.aux
+/dev/*.toc
