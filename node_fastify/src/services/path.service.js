@@ -1,27 +1,9 @@
 import fs from 'node:fs/promises'
-import path from 'node:path'
 import { Path } from '../models/user.model.js'
-import config from '../config/storage.js'
-
-function resolveSharedPath(rawPath) {
-    const sharedRoot = path.resolve(config.sharedFolder)
-    const normalizedPath = String(rawPath ?? '').trim().replace(/^[/\\]+/, '')
-
-    if (!normalizedPath) {
-        throw new Error('Path is required')
-    }
-
-    const resolvedPath = path.resolve(sharedRoot, normalizedPath)
-
-    if (resolvedPath !== sharedRoot && !resolvedPath.startsWith(sharedRoot + path.sep)) {
-        throw new Error('Path is outside the shared folder')
-    }
-
-    return resolvedPath
-}
+import { resolveSharedPath } from '../config/storage.js'
 
 export async function createPath(pathData) {
-    const resolvedPath = resolveSharedPath(pathData.path)
+    const { absolutePath: resolvedPath } = resolveSharedPath(pathData.path)
 
     try {
         const stats = await fs.stat(resolvedPath)

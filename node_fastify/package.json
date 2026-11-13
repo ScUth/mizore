@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "node --test src/tests/integration"
+    "test": "node --test 'src/tests/integration/*.test.js'"
   },
   "keywords": [],
   "author": "",

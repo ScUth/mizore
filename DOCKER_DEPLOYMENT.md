@@ -115,10 +115,13 @@ Key environment variables:
 
 **Backend (node_fastify):**
 - `HOST`: Server host (0.0.0.0 for Docker)
-- `SHARED_FOLDER`: Backend root directory. Directories under this root appear in
-  the sidebar's Mounted folders dropdown. To expose multiple folders, mount each
-  one as a child of this root, such as `/files/projects` and `/files/archive`
-  when `SHARED_FOLDER=/files`.
+- `SHARED_FOLDER`: Backend root directory when you only need one.
+- `SHARED_FOLDERS`: Comma-separated list of root directories, such as
+  `/home/yuki,/mnt/data`. It overrides `SHARED_FOLDER` when set. Bind-mount
+  each one into the backend container at the same path as on the host. Paths
+  saved in the app can then be absolute paths inside any root, such as
+  `/mnt/data/movies`. Paths that are not inside a root are treated as relative to
+  the first root, so rows saved before this change keep working.
 - `DB_USER`: PostgreSQL user
 - `DB_PASSWORD`: PostgreSQL password
 - `DB_HOST`: PostgreSQL hostname (use `postgres` in docker-compose)

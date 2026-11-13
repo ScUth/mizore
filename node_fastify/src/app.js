@@ -11,7 +11,10 @@ export default async function buildApp() {
     })
 
     await fastify.register(fastifyStatic, {
-        root: config.sharedFolder
+        // Files are only served through /api/files, which checks the path
+        // against every configured root before calling reply.sendFile.
+        root: config.sharedFolders,
+        serve: false,
     })
 
     await fastify.register(cors, {

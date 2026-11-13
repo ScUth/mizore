@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { after, test } from 'node:test'
-import { app, closeTestApp, sharedFolder } from './setup.js'
+import { app, closeTestApp, secondSharedFolder, sharedFolder } from './setup.js'
 
 after(closeTestApp)
 
@@ -46,4 +46,53 @@ test('downloading a shared file returns its contents', async () => {
 
     assert.equal(response.statusCode, 200)
     assert.equal(response.body, 'Report contents')
+})
+
+test('listing files works with an absolute path inside any configured root', async () => {
+    const moviesFolder = path.join(secondSharedFolder, 'movies')
+    await mkdir(moviesFolder)
+    await writeFile(path.join(moviesFolder, 'film.mkv'), 'Film contents')
+
+    // The frontend strips the leading slash, so send it without one.
+    const relativeToFs = moviesFolder.replace(/^\/+/, '')
+    const response = await app.inject({
+        method: 'GET',
+        url: `/api/list/${encodeURIComponent(relativeToFs)}`,
+    })
+
+    assert.equal(response.statusCode, 200)
+    assert.deepEqual(response.json(), { files: ['film.mkv'] })
+})
+
+test('downloading a file from the second root returns its contents', async () => {
+    const filePath = path.join(secondSharedFolder, 'notes.txt')
+    await writeFile(filePath, 'Notes contents')
+
+    const response = await app.inject({
+        method: 'GET',
+        url: `/api/files/${encodeURIComponent(filePath)}`,
+    })
+
+    assert.equal(response.statusCode, 200)
+    assert.equal(response.body, 'Notes contents')
+})
+
+test('listing files rejects paths outside every configured root', async () => {
+    const response = await app.inject({
+        method: 'GET',
+        url: `/api/list/${encodeURIComponent('../../etc')}`,
+    })
+
+    assert.equal(response.statusCode, 400)
+    assert.deepEqual(response.json(), { error: 'Path is outside the shared folder' })
+})
+
+test('downloading a file rejects paths outside every configured root', async () => {
+    const response = await app.inject({
+        method: 'GET',
+        url: `/api/files/${encodeURIComponent('/etc/passwd')}`,
+    })
+
+    // "/etc/passwd" is not under a root, so it is treated as relative to the first root.
+    assert.equal(response.statusCode, 404)
 })

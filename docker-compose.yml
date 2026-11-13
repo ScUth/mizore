@@ -32,11 +32,14 @@ services:
         target: /home/yuki
         bind:
           create_host_path: false
-      # - type: bind
-      #   source: /
-      #   target: /
-      #   bind:
-      #     create_host_path: false
+      # Add more folders the same way: keep target == source so the paths
+      # saved in the database match the host paths, then list every target
+      # in SHARED_FOLDERS (comma-separated), e.g. SHARED_FOLDERS=/home/yuki,/mnt/data
+      - type: bind
+        source: /etc
+        target: /etc
+        bind:
+          create_host_path: false
     environment:
       HOST: 0.0.0.0
       PORT: ${BACKEND_PORT}
@@ -46,6 +49,7 @@ services:
       DB_NAME: ${DB_NAME:-mizore}
       DB_PORT: ${DB_PORT}
       SHARED_FOLDER: ${SHARED_FOLDER:-/files}
+      SHARED_FOLDERS: ${SHARED_FOLDERS:-}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
     ports:
