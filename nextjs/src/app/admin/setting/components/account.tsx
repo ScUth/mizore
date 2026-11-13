@@ -48,9 +48,6 @@ type AccountProps = {
 type SortField = "id" | "username" | "role" | "created_at";
 type SortDirection = "asc" | "desc";
 
-// Prefer an env var so this isn't hardcoded to one machine's LAN IP.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
-
 function getAuthHeaders(
   token: string,
   extraHeaders: Record<string, string> = {},
@@ -141,7 +138,7 @@ export default function Account({ width = "100%" }: AccountProps) {
     setLoading(true);
     setError("");
     try {
-      const response = await request(`${API_BASE}/api/users`, {
+      const response = await request("/api/users", {
         cache: "no-store",
         headers: getAuthHeaders(accessToken),
         signal,
@@ -284,7 +281,7 @@ export default function Account({ width = "100%" }: AccountProps) {
     setCreateError("");
 
     try {
-      const response = await request(`${API_BASE}/api/users/createdSubUser`, {
+      const response = await request("/api/users/createdSubUser", {
         method: "POST",
         headers: getAuthHeaders(accessToken, { "Content-Type": "application/json" }),
         body: JSON.stringify({ username, password, role: createRole, parentUserId }),
@@ -337,7 +334,7 @@ export default function Account({ width = "100%" }: AccountProps) {
     setSaveError("");
 
     try {
-      const response = await request(`${API_BASE}/api/users/${editingUser.id}`, {
+      const response = await request(`/api/users/${editingUser.id}`, {
         method: "PATCH",
         headers: getAuthHeaders(accessToken, { "Content-Type": "application/json" }),
         body: JSON.stringify({ username: editUsername, role: editRole }),
@@ -383,7 +380,7 @@ export default function Account({ width = "100%" }: AccountProps) {
     setDeleteError("");
 
     try {
-      const response = await request(`${API_BASE}/api/users/${deletingUser.id}`, {
+      const response = await request(`/api/users/${deletingUser.id}`, {
         method: "DELETE",
         headers: getAuthHeaders(accessToken),
       });

@@ -1,12 +1,17 @@
 import type { NextConfig } from "next";
 
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:4000";
+const apiProxyOrigin = new URL(
+  apiProxyTarget.includes("://") ? apiProxyTarget : `http://${apiProxyTarget}`,
+).origin;
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:4000/api/:path*",
+        destination: `${apiProxyOrigin}/api/:path*`,
       },
     ];
   },

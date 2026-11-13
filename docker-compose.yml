@@ -60,9 +60,11 @@ services:
     build:
       context: ./nextjs
       dockerfile: Dockerfile
+      args:
+        API_PROXY_TARGET: ${API_PROXY_TARGET:-http://backend:4000}
     container_name: mizore-frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000
+      API_PROXY_TARGET: ${API_PROXY_TARGET:-http://backend:4000}
       DB_URL: 
     ports:
       - "3000:3000"

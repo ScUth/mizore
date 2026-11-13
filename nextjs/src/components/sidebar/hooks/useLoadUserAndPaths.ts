@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useAppContext } from "@/context/AppContext";
-import { API_BASE } from "../constants";
 
 export function useLoadUserAndPaths() {
   const { accessToken, request, setUser, setPaths } = useAppContext();
@@ -14,7 +13,7 @@ export function useLoadUserAndPaths() {
       const headers = { Authorization: `Bearer ${accessToken}` };
 
       try {
-        const response = await request(`${API_BASE}/api/me`, { headers });
+        const response = await request("/api/me", { headers });
         if (!response.ok) {
           setUser(null);
           return;
@@ -34,7 +33,7 @@ export function useLoadUserAndPaths() {
         if (!userId) return;
 
         try {
-          const pResp = await request(`${API_BASE}/api/paths/${userId}`, { headers });
+          const pResp = await request(`/api/paths/${userId}`, { headers });
           if (pResp.ok) {
             const pData = await pResp.json();
             setPaths(pData?.paths || (Array.isArray(pData) ? pData : []));

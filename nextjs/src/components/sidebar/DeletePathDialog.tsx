@@ -4,7 +4,6 @@ import * as React from "react";
 import { Button } from "@mui/material";
 import { useAppContext } from "@/context/AppContext";
 import CustomDialog from "./dialog";
-import { API_BASE } from "./constants";
 
 export default function DeletePathDialog({
   path, onClose, onDeleted,
@@ -28,7 +27,7 @@ export default function DeletePathDialog({
     setError("");
     try {
       const response = await request(
-        `${API_BASE}/api/paths/${encodeURIComponent(String(pathId))}`,
+        `/api/paths/${encodeURIComponent(String(pathId))}`,
         { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } },
       );
       if (!response.ok) {

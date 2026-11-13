@@ -19,7 +19,6 @@ import AddPathDialog from "@/components/sidebar/addpath";
 import Sidebar, { APPBAR_HEIGHT } from "../../../components/sidebar";
 
 const drawerWidth = 240;
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
 
 function getItemName(item: unknown) {
   if (typeof item === "string") return item;
@@ -92,7 +91,7 @@ function PdfCover({ filePath, name }: { filePath: string; name: string }) {
           import.meta.url,
         ).toString();
 
-        const response = await request(`${API_BASE}/api/files/${encodedPath}`, {
+        const response = await request(`/api/files/${encodedPath}`, {
           signal: controller.signal,
         });
         if (!response.ok) {
@@ -228,7 +227,7 @@ export default function PathContent({
       try {
         const token = accessToken;
         const response = await request(
-          `${API_BASE}/api/list/${encodeURIComponent(trimmedPath)}`,
+          `/api/list/${encodeURIComponent(trimmedPath)}`,
           {
             headers: token ? { Authorization: `Bearer ${token}` } : undefined,
           },

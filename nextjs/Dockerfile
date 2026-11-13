@@ -3,6 +3,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+ARG API_PROXY_TARGET=http://localhost:4000
+
 # Copy package files
 COPY package.json package-lock.json* ./
 

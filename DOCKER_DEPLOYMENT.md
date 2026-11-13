@@ -115,14 +115,18 @@ Key environment variables:
 
 **Backend (node_fastify):**
 - `HOST`: Server host (0.0.0.0 for Docker)
+- `SHARED_FOLDER`: Backend root directory. Directories under this root appear in
+  the sidebar's Mounted folders dropdown. To expose multiple folders, mount each
+  one as a child of this root, such as `/files/projects` and `/files/archive`
+  when `SHARED_FOLDER=/files`.
 - `DB_USER`: PostgreSQL user
 - `DB_PASSWORD`: PostgreSQL password
 - `DB_HOST`: PostgreSQL hostname (use `postgres` in docker-compose)
 - `DB_NAME`: Database name
 - `DB_PORT`: PostgreSQL port (5432)
 
-**Frontend (nextjs):**
-- `NEXT_PUBLIC_API_URL`: Backend API URL (http://localhost:3001 for local, your domain for production)
+**Frontend (Next.js):**
+- `API_PROXY_TARGET`: Backend URL reachable from Next.js (defaults to `http://localhost:4000`; use `http://backend:4000` in Docker Compose). A bare host such as `192.168.1.57:4000` is treated as HTTP. Compose passes this value at image build time and runtime. Browser requests use same-origin `/api/...` paths and are proxied server-side.
 
 ## Database Migrations
 

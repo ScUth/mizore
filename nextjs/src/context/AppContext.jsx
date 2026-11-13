@@ -9,7 +9,6 @@ import {
   useState,
 } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
 const STORAGE_KEYS = {
   accessToken: "accessToken",
   refreshToken: "refreshToken",
@@ -97,7 +96,7 @@ export function AppProvider({ children }) {
         headers.set("Authorization", `Bearer ${accessToken}`);
       }
 
-      return fetch(url.startsWith("http") ? url : `${API_BASE}${url}`, {
+      return fetch(url, {
         ...options,
         headers,
       });
@@ -113,7 +112,7 @@ export function AppProvider({ children }) {
       }
 
       try {
-        const response = await fetch(`${API_BASE}/api/me`, {
+        const response = await fetch("/api/me", {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });
@@ -160,7 +159,7 @@ export function AppProvider({ children }) {
   }, [hydrateSession]);
 
   const login = useCallback(async (credentials) => {
-    const response = await fetch(`${API_BASE}/api/login`, {
+    const response = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

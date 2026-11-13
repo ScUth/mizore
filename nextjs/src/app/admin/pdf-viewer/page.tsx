@@ -7,8 +7,6 @@ import { useSearchParams } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
 import AdminGuard from "../components/adminGuard";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.1.57:4000";
-
 function PdfViewerContent() {
   const searchParams = useSearchParams();
   const { request } = useAppContext();
@@ -44,7 +42,7 @@ function PdfViewerContent() {
     const loadPdf = async () => {
       try {
         const response = await requestRef.current(
-          `${API_BASE}/api/files/${encodeURIComponent(filePath)}`,
+          `/api/files/${encodeURIComponent(filePath)}`,
           { signal: controller.signal },
         );
         if (!response.ok) {
